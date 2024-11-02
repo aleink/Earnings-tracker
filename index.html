@@ -24,6 +24,14 @@
             border-radius: 10px;
             box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
         }
+        input {
+            margin: 10px 0;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            width: 80%;
+            text-align: center;
+        }
         button {
             padding: 10px 20px;
             margin: 5px;
@@ -33,29 +41,32 @@
             color: white;
             background-color: #007aff;
         }
-        input {
+        #summaryContainer, #transactionLog {
+            margin-top: 20px;
+            width: 100%;
+            text-align: left;
+            background-color: #444;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.3);
+        }
+        .summaryBox {
             margin: 10px 0;
             padding: 10px;
-            border: none;
-            border-radius: 5px;
-            width: 80%;
-            text-align: center;
-        }
-        #netProfitDisplay, #dailySummary, #grandTotalSummary {
-            margin-top: 20px;
-            font-size: 1.2em;
+            border-radius: 8px;
+            background-color: #555;
+            font-size: 1.1em;
         }
         #transactionLog {
             max-height: 200px;
             overflow-y: auto;
-            margin-top: 20px;
-            background-color: #222;
-            padding: 10px;
-            border-radius: 10px;
         }
         #transactionLog p {
             margin: 5px 0;
             font-size: 0.9em;
+            background-color: #333;
+            padding: 10px;
+            border-radius: 8px;
         }
     </style>
 </head>
@@ -72,8 +83,6 @@
     <!-- Main Content (Visible after login) -->
     <div class="main-content" id="main-content" style="display: none;">
         <h2>Welcome to your Earnings Tracker!</h2>
-        <p>Here you can start tracking your earnings and expenses.</p>
-
         <input type="text" id="totalTattooValue" placeholder="Total Tattoo Value ($)">
         <input type="text" id="percentageEarned" placeholder="Percentage Earned (%)">
         <input type="text" id="cashTip" placeholder="Cash Tip ($)">
@@ -81,15 +90,17 @@
         <input type="text" id="description" placeholder="Tattoo Description (Optional)">
 
         <button onclick="recordTransaction()">Record Transaction</button>
-        <button onclick="calculateNetProfit()">Calculate Net Profit</button>
         <button onclick="resetLog()">Reset Log</button>
         <button onclick="undoTransaction()">Undo Last Transaction</button>
-
-        <p id="netProfitDisplay">Net Profit: $0.00</p>
-        <div id="dailySummary">Daily Summary: Gross: $0.00, Tips: $0.00, Net: $0.00</div>
-        <div id="grandTotalSummary">Grand Total: Gross: $0.00, Tips: $0.00, Net: $0.00</div>
         <button onclick="logOut()">Log Out</button>
         
+        <!-- Summary Container -->
+        <div id="summaryContainer">
+            <div class="summaryBox" id="dailySummary">Daily Summary: Gross: $0.00, Tips: $0.00, Net: $0.00</div>
+            <div class="summaryBox" id="grandTotalSummary">Grand Total: Gross: $0.00, Tips: $0.00, Net: $0.00</div>
+        </div>
+        
+        <!-- Transaction Log -->
         <div id="transactionLog">
             <h3>Transaction Log</h3>
             <p>No transactions recorded.</p>
@@ -184,20 +195,6 @@
             }).catch(error => alert("Error recording transaction: " + error.message));
         }
 
-        function calculateNetProfit() {
-            db.collection("earnings")
-                .where("userId", "==", auth.currentUser.uid)
-                .get()
-                .then(querySnapshot => {
-                    let netProfit = 0;
-                    querySnapshot.forEach(doc => {
-                        netProfit += doc.data().earnings;
-                    });
-                    document.getElementById("netProfitDisplay").innerText = "Net Profit: $" + netProfit.toFixed(2);
-                })
-                .catch(error => alert("Error calculating net profit: " + error.message));
-        }
-
         function loadTransactions() {
             const today = new Date();
             today.setHours(0, 0, 0, 0);
@@ -229,7 +226,7 @@
                             dailyNet += net;
                         }
 
-                        document.getElementById("transactionLog").innerHTML += `<p>${date.toLocaleString()}: $${gross} gross, $${tips} tips, $${net} net. Description: ${data.description || "N/A"}</p>`;
+                        document.getElementById("transactionLog").innerHTML += `<p>${date.toLocaleString()}: $${gross.toFixed(2)} gross, $${tips.toFixed(2)} tips, $${net.toFixed(2)} net. Description: ${data.description || "N/A"}</p>`;
                     });
 
                     document.getElementById("dailySummary").innerText = `Daily Summary: Gross: $${dailyGross.toFixed(2)}, Tips: $${dailyTips.toFixed(2)}, Net: $${dailyNet.toFixed(2)}`;
