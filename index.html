@@ -328,6 +328,9 @@
                             const data = doc.data();
                             return `<div>${data.date}: $${data.gross.toFixed(2)} gross, $${data.tips.toFixed(2)} tips, $${data.net.toFixed(2)} net.<br>Description: ${data.description}</div>`;
                         }).join("<hr>");
+                }).catch(error => {
+                    alert("Error displaying log: " + error.message);
+                    console.error("Log display error:", error);
                 });
         }
     </script>
