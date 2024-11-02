@@ -1,235 +1,147 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Club Tattoo Earnings Tracker</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #121212;
-      color: white;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      margin: 0;
-    }
-    .container {
-      background-color: #333;
-      padding: 20px;
-      border-radius: 10px;
-      width: 90%;
-      max-width: 500px;
-      text-align: center;
-    }
-    input, button {
-      width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      border-radius: 5px;
-      border: none;
-      font-size: 16px;
-    }
-    button {
-      background-color: #007BFF;
-      color: white;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #0056b3;
-    }
-  </style>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Club Tattoo Earnings Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: white;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container, .main-content {
+            max-width: 500px;
+            padding: 20px;
+            background-color: #333;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
+            display: none;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            color: white;
+            background-color: #007aff;
+        }
+    </style>
 </head>
 <body>
+    <!-- Login Container -->
+    <div class="container" id="login-container">
+        <h1>Club Tattoo Earnings Tracker</h1>
+        <input type="email" id="email" placeholder="Email"><br>
+        <input type="password" id="password" placeholder="Password"><br>
+        <button onclick="signUp()">Sign Up</button>
+        <button onclick="logIn()">Log In</button>
+    </div>
 
-<div id="login-section" class="container">
-  <h2>Club Tattoo Earnings Tracker</h2>
-  <input type="email" id="email" placeholder="Email">
-  <input type="password" id="password" placeholder="Password">
-  <button onclick="signUp()">Sign Up</button>
-  <button onclick="logIn()">Log In</button>
-</div>
+    <!-- Main Content (Visible after login) -->
+    <div class="main-content" id="main-content">
+        <h2>Welcome to your Earnings Tracker!</h2>
+        <p>Here you can start tracking your earnings and expenses.</p>
+        <!-- Add additional main page content here -->
+        <button onclick="logOut()">Log Out</button>
+    </div>
 
-<div id="app-section" class="container" style="display: none;">
-  <h2>Welcome to your Earnings Tracker!</h2>
-  <p>Here you can start tracking your earnings and expenses.</p>
-  
-  <input type="number" id="tattooValue" placeholder="Total Tattoo Value ($)">
-  <input type="number" id="percentage" placeholder="Percentage You Earn (%)">
-  <input type="number" id="cashTip" placeholder="Cash Tip ($)">
-  <input type="number" id="cardTip" placeholder="Card Tip ($)">
-  <input type="number" id="supplies" placeholder="Supply Expenses ($)">
-  <input type="number" id="miscExpenses" placeholder="Misc Expenses ($)">
-  
-  <button onclick="recordTransaction()">Record Transaction</button>
-  <button onclick="exportCSV()">Export as CSV</button>
-  
-  <h3>Filter Earnings by Date</h3>
-  <input type="date" id="startDate">
-  <input type="date" id="endDate">
-  <button onclick="calculateNetProfit()">Calculate Net Profit</button>
-  
-  <p id="netProfitResult"></p>
-  <button onclick="logOut()">Log Out</button>
-</div>
+    <!-- Firebase setup using CDN -->
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
 
-<script>
-  // Firebase configuration
-  const firebaseConfig = {
-    apiKey: "AIzaSyDwkAyX5RSMXDSe7PHSd7ZwI27Ed5uEhKo",
-    authDomain: "club-tattoo-earnings-tracker.firebaseapp.com",
-    projectId: "club-tattoo-earnings-tracker",
-    storageBucket: "club-tattoo-earnings-tracker.appspot.com",
-    messagingSenderId: "411443089106",
-    appId: "1:411443089106:web:93a23cea86e8d008d7a70b",
-    measurementId: "G-6W7SQXCWJC"
-  };
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDwkAyX5RSMXDSe7PHSd7ZwI27Ed5uEhKo",
+            authDomain: "club-tattoo-earnings-tracker.firebaseapp.com",
+            projectId: "club-tattoo-earnings-tracker",
+            storageBucket: "club-tattoo-earnings-tracker.appspot.com",
+            messagingSenderId: "411443089106",
+            appId: "1:411443089106:web:93a23cea86e8d008d7a70b",
+            measurementId: "G-6W7SQXCWJC"
+        };
 
-  // Initialize Firebase
-  const app = firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const db = firebase.firestore();
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
 
-  // Authentication Functions
-  function signUp() {
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
-    auth.createUserWithEmailAndPassword(email, password)
-      .then(() => {
-        alert("Sign-up successful!");
-        showAppSection();
-      })
-      .catch(error => alert(error.message));
-  }
+        // Access Firebase services
+        const auth = firebase.auth();
+        const db = firebase.firestore();
 
-  function logIn() {
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
-    auth.signInWithEmailAndPassword(email, password)
-      .then(() => {
-        alert("Log-in successful!");
-        showAppSection();
-      })
-      .catch(error => alert(error.message));
-  }
+        // Show or hide sections based on login state
+        function showMainContent() {
+            document.getElementById("login-container").style.display = "none";
+            document.getElementById("main-content").style.display = "block";
+        }
 
-  function logOut() {
-    auth.signOut()
-      .then(() => {
-        alert("Logged out!");
-        showLoginSection();
-      })
-      .catch(error => alert(error.message));
-  }
+        function showLogin() {
+            document.getElementById("login-container").style.display = "block";
+            document.getElementById("main-content").style.display = "none";
+        }
 
-  function showAppSection() {
-    document.getElementById("login-section").style.display = "none";
-    document.getElementById("app-section").style.display = "block";
-  }
-
-  function showLoginSection() {
-    document.getElementById("login-section").style.display = "block";
-    document.getElementById("app-section").style.display = "none";
-  }
-
-  auth.onAuthStateChanged(user => {
-    if (user) {
-      showAppSection();
-    } else {
-      showLoginSection();
-    }
-  });
-
-  // Transaction Functions
-  function recordTransaction() {
-    const userId = auth.currentUser.uid;
-    const tattooValue = parseFloat(document.getElementById("tattooValue").value) || 0;
-    const percentage = parseFloat(document.getElementById("percentage").value) || 0;
-    const cashTip = parseFloat(document.getElementById("cashTip").value) || 0;
-    const cardTip = parseFloat(document.getElementById("cardTip").value) || 0;
-    const supplies = parseFloat(document.getElementById("supplies").value) || 0;
-    const miscExpenses = parseFloat(document.getElementById("miscExpenses").value) || 0;
-    const date = new Date().toISOString().split("T")[0];
-    
-    const earnings = (tattooValue * (percentage / 100)) + cashTip + cardTip;
-    const expenses = supplies + miscExpenses;
-    const netProfit = earnings - expenses;
-
-    db.collection("earnings").add({
-      userId,
-      tattooValue,
-      percentage,
-      cashTip,
-      cardTip,
-      supplies,
-      miscExpenses,
-      date,
-      earnings,
-      expenses,
-      netProfit
-    })
-    .then(() => alert("Transaction recorded successfully!"))
-    .catch(error => alert(error.message));
-  }
-
-  // Calculate Net Profit for Date Range
-  function calculateNetProfit() {
-    const userId = auth.currentUser.uid;
-    const startDate = document.getElementById("startDate").value;
-    const endDate = document.getElementById("endDate").value;
-    
-    db.collection("earnings")
-      .where("userId", "==", userId)
-      .where("date", ">=", startDate)
-      .where("date", "<=", endDate)
-      .get()
-      .then(snapshot => {
-        let totalEarnings = 0;
-        let totalExpenses = 0;
-
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          totalEarnings += data.earnings;
-          totalExpenses += data.expenses;
+        // Check login state on page load
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                showMainContent();
+            } else {
+                showLogin();
+            }
         });
 
-        const netProfit = totalEarnings - totalExpenses;
-        document.getElementById("netProfitResult").innerText = 
-          `Total Earnings: $${totalEarnings.toFixed(2)}, Total Expenses: $${totalExpenses.toFixed(2)}, Net Profit: $${netProfit.toFixed(2)}`;
-      })
-      .catch(error => alert(error.message));
-  }
+        // Sign Up function
+        function signUp() {
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+            auth.createUserWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    console.log("User signed up:", userCredential.user);
+                    alert("Sign-up successful!");
+                    showMainContent();
+                })
+                .catch((error) => {
+                    console.error("Error signing up:", error.message);
+                    alert(error.message);
+                });
+        }
 
-  // Export Data to CSV
-  function exportCSV() {
-    const userId = auth.currentUser.uid;
-    
-    db.collection("earnings")
-      .where("userId", "==", userId)
-      .get()
-      .then(snapshot => {
-        let csvContent = "data:text/csv;charset=utf-8,";
-        csvContent += "Date,Tattoo Value,Percentage,Cash Tip,Card Tip,Supplies,Misc Expenses,Earnings,Expenses,Net Profit\n";
+        // Log In function
+        function logIn() {
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+            auth.signInWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    console.log("User logged in:", userCredential.user);
+                    alert("Log-in successful!");
+                    showMainContent();
+                })
+                .catch((error) => {
+                    console.error("Error logging in:", error.message);
+                    alert(error.message);
+                });
+        }
 
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          csvContent += `${data.date},${data.tattooValue},${data.percentage},${data.cashTip},${data.cardTip},${data.supplies},${data.miscExpenses},${data.earnings},${data.expenses},${data.netProfit}\n`;
-        });
-
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", "earnings_report.csv");
-        document.body.appendChild(link);
-        link.click();
-      })
-      .catch(error => alert(error.message));
-  }
-</script>
+        // Log Out function
+        function logOut() {
+            auth.signOut()
+                .then(() => {
+                    alert("Logged out successfully!");
+                    showLogin();
+                })
+                .catch((error) => {
+                    console.error("Error logging out:", error.message);
+                    alert(error.message);
+                });
+        }
+    </script>
 </body>
 </html>
