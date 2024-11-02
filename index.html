@@ -45,9 +45,9 @@
     </div>
 
     <!-- Firebase setup using CDN -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
 
     <script>
         // Firebase configuration
@@ -62,17 +62,11 @@
         };
 
         // Initialize Firebase
-        const app = firebase.initializeApp(firebaseConfig);
+        firebase.initializeApp(firebaseConfig);
 
-        let auth, db;
-        
-        // Wait for Firebase to initialize
-        document.addEventListener("DOMContentLoaded", () => {
-            auth = firebase.auth();
-            db = firebase.firestore();
-
-            console.log("Firebase initialized");
-        });
+        // Access Firebase services
+        const auth = firebase.auth();
+        const db = firebase.firestore();
 
         // Sign Up function
         function signUp() {
