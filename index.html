@@ -163,8 +163,9 @@
             const cashTip = parseFloat(document.getElementById("cashTip").value) || 0;
             const cardTip = parseFloat(document.getElementById("cardTip").value) || 0;
 
-            // Correct calculation of earnings
-            const earnings = (totalTattooValue * (percentageEarned / 100)) + cashTip + cardTip;
+            // Calculate the earnings
+            const earnedFromTattoo = totalTattooValue * (percentageEarned / 100);
+            const earnings = earnedFromTattoo + cashTip + cardTip;
 
             // Save transaction to Firestore
             db.collection("earnings").add({
