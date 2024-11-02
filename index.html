@@ -17,12 +17,13 @@
             height: 100vh;
             margin: 0;
         }
-        .container {
+        .container, .main-content {
             max-width: 500px;
             padding: 20px;
             background-color: #333;
             border-radius: 10px;
             box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
+            display: none;
         }
         button {
             padding: 10px 20px;
@@ -36,12 +37,21 @@
     </style>
 </head>
 <body>
-    <div class="container">
+    <!-- Login Container -->
+    <div class="container" id="login-container">
         <h1>Club Tattoo Earnings Tracker</h1>
         <input type="email" id="email" placeholder="Email"><br>
         <input type="password" id="password" placeholder="Password"><br>
         <button onclick="signUp()">Sign Up</button>
         <button onclick="logIn()">Log In</button>
+    </div>
+
+    <!-- Main Content (Visible after login) -->
+    <div class="main-content" id="main-content">
+        <h2>Welcome to your Earnings Tracker!</h2>
+        <p>Here you can start tracking your earnings and expenses.</p>
+        <!-- Add additional main page content here -->
+        <button onclick="logOut()">Log Out</button>
     </div>
 
     <!-- Firebase setup using CDN -->
@@ -68,6 +78,26 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
+        // Show or hide sections based on login state
+        function showMainContent() {
+            document.getElementById("login-container").style.display = "none";
+            document.getElementById("main-content").style.display = "block";
+        }
+
+        function showLogin() {
+            document.getElementById("login-container").style.display = "block";
+            document.getElementById("main-content").style.display = "none";
+        }
+
+        // Check login state on page load
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                showMainContent();
+            } else {
+                showLogin();
+            }
+        });
+
         // Sign Up function
         function signUp() {
             const email = document.getElementById("email").value;
@@ -76,6 +106,7 @@
                 .then((userCredential) => {
                     console.log("User signed up:", userCredential.user);
                     alert("Sign-up successful!");
+                    showMainContent();
                 })
                 .catch((error) => {
                     console.error("Error signing up:", error.message);
@@ -91,9 +122,23 @@
                 .then((userCredential) => {
                     console.log("User logged in:", userCredential.user);
                     alert("Log-in successful!");
+                    showMainContent();
                 })
                 .catch((error) => {
                     console.error("Error logging in:", error.message);
+                    alert(error.message);
+                });
+        }
+
+        // Log Out function
+        function logOut() {
+            auth.signOut()
+                .then(() => {
+                    alert("Logged out successfully!");
+                    showLogin();
+                })
+                .catch((error) => {
+                    console.error("Error logging out:", error.message);
                     alert(error.message);
                 });
         }
