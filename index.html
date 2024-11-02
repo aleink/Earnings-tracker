@@ -63,8 +63,16 @@
 
         // Initialize Firebase
         const app = firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
+
+        let auth, db;
+        
+        // Wait for Firebase to initialize
+        document.addEventListener("DOMContentLoaded", () => {
+            auth = firebase.auth();
+            db = firebase.firestore();
+
+            console.log("Firebase initialized");
+        });
 
         // Sign Up function
         function signUp() {
