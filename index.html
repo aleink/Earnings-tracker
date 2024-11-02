@@ -1,246 +1,58 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>InkTracker Pro</title>
-  <style>
-    /* Styling */
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    }
-    body {
-      background-color: #121212;
-      color: #ffffff;
-      padding: 20px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
-      min-height: 100vh;
-    }
-    .header {
-      width: 100%;
-      max-width: 600px;
-      background-color: #1f1f1f;
-      padding: 15px;
-      text-align: center;
-      border-radius: 10px;
-      margin-bottom: 20px;
-      color: white;
-      font-size: 24px;
-      font-weight: bold;
-      letter-spacing: 1px;
-    }
-    .container {
-      max-width: 600px;
-      width: 100%;
-      background-color: #1f1f1f;
-      border-radius: 15px;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-    }
-    label {
-      color: #b3b3b3;
-      font-weight: 500;
-      margin-bottom: 5px;
-    }
-    input[type="number"], input[type="date"] {
-      width: 100%;
-      padding: 12px;
-      font-size: 16px;
-      margin-bottom: 10px;
-      border: 1px solid #333;
-      border-radius: 8px;
-      background-color: #333;
-      color: #ffffff;
-    }
-    .button {
-      padding: 12px;
-      font-size: 16px;
-      font-weight: 500;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      margin-top: 15px;
-      background-color: #34c759;
-      transition: background-color 0.3s ease;
-    }
-    .button:hover {
-      background-color: #2a9d4d;
-    }
-    .secondary-button {
-      background-color: #ff3b30;
-      transition: background-color 0.3s ease;
-    }
-    .secondary-button:hover {
-      background-color: #d12a21;
-    }
-    .summary, .log-section {
-      background-color: #1f1f1f;
-      padding: 15px;
-      border-radius: 10px;
-      margin-top: 20px;
-    }
-    .summary p {
-      font-size: 16px;
-      color: #b3b3b3;
-      margin: 8px 0;
-    }
-    .log-section ul {
-      list-style-type: none;
-      padding: 0;
-      max-height: 200px;
-      overflow-y: auto;
-    }
-    .log-section li {
-      padding: 8px;
-      border-bottom: 1px solid #333;
-      font-size: 14px;
-      color: #ffffff;
-    }
-  </style>
-</head>
 <body>
+   <h1>Club Tattoo Earnings Tracker</h1>
+   <div class="container">
+       <label>Total Tattoo Value ($):</label>
+       <input type="number" id="tattooValue" placeholder="Enter total tattoo value">
+       
+       <label>Percentage Earned (%):</label>
+       <input type="number" id="percentageEarned" placeholder="Enter percentage earned">
+       
+       <label>Cash Tip ($):</label>
+       <input type="number" id="cashTip" placeholder="Enter cash tip amount">
+       
+       <label>Card Tip ($):</label>
+       <input type="number" id="cardTip" placeholder="Enter card tip amount">
+       
+       <label>Supplies Expense ($):</label>
+       <input type="number" id="suppliesExpense" placeholder="Enter supplies expense">
+       
+       <label>Misc Expense ($):</label>
+       <input type="number" id="miscExpense" placeholder="Enter misc expense">
 
-<div class="header">IncomeTracker ClubTattoo</div>
+       <button onclick="recordTransaction()">Record Transaction</button>
+   </div>
 
-<div class="container">
-  <!-- Earnings Section -->
-  <label for="tattoo-value">Total Tattoo Value ($):</label>
-  <input type="number" id="tattoo-value" placeholder="Enter tattoo value">
+   <!-- Script to handle recording transactions -->
+   <script>
+       function recordTransaction() {
+           const tattooValue = parseFloat(document.getElementById('tattooValue').value) || 0;
+           const percentageEarned = parseFloat(document.getElementById('percentageEarned').value) || 0;
+           const cashTip = parseFloat(document.getElementById('cashTip').value) || 0;
+           const cardTip = parseFloat(document.getElementById('cardTip').value) || 0;
+           const suppliesExpense = parseFloat(document.getElementById('suppliesExpense').value) || 0;
+           const miscExpense = parseFloat(document.getElementById('miscExpense').value) || 0;
+           const date = new Date().toISOString().split('T')[0]; // Get current date
 
-  <label for="percentage">Percentage Earned (%):</label>
-  <input type="number" id="percentage" placeholder="Enter percentage earned">
+           const netEarnings = (tattooValue * (percentageEarned / 100)) + cashTip + cardTip;
+           const profitBeforeExpenses = netEarnings;
+           const netProfit = netEarnings - (suppliesExpense + miscExpense);
 
-  <label for="cash-tip">Cash Tip ($):</label>
-  <input type="number" id="cash-tip" placeholder="Enter cash tip">
-
-  <label for="card-tip">Card Tip ($):</label>
-  <input type="number" id="card-tip" placeholder="Enter card tip">
-
-  <!-- Expenses Section -->
-  <label for="supplies-expense">Supplies Expense ($):</label>
-  <input type="number" id="supplies-expense" placeholder="Enter supplies expense">
-
-  <label for="misc-expense">Miscellaneous Expense ($):</label>
-  <input type="number" id="misc-expense" placeholder="Enter other expenses">
-
-  <button class="button" onclick="recordTransaction()">Record Transaction</button>
-  <button class="secondary-button" onclick="undoLastTransaction()">Undo Last Transaction</button>
-
-  <!-- Date Range Section -->
-  <label for="start-date">Start Date:</label>
-  <input type="date" id="start-date">
-  
-  <label for="end-date">End Date:</label>
-  <input type="date" id="end-date">
-
-  <button class="button" onclick="calculateNetProfit()">Calculate Net Profit</button>
-</div>
-
-<div class="summary">
-  <p><strong>Summary</strong></p>
-  <p>Gross Earnings: $<span id="gross-earnings">0</span></p>
-  <p>Total Tips: $<span id="total-tips">0</span></p>
-  <p>Supply Expenses: $<span id="supply-expenses">0</span></p>
-  <p>Miscellaneous Expenses: $<span id="misc-expenses">0</span></p>
-  <p>Net Profit: $<span id="net-profit">0</span></p>
-</div>
-
-<div class="log-section">
-  <p><strong>Transaction Log</strong></p>
-  <ul id="transaction-log"></ul>
-  <button class="button" onclick="exportLog()">Export as CSV</button>
-</div>
-
-<script>
-  let transactions = JSON.parse(localStorage.getItem("transactions")) || [];
-
-  function recordTransaction() {
-    const date = new Date().toISOString().split("T")[0];
-    const tattooValue = parseFloat(document.getElementById("tattoo-value").value) || 0;
-    const percentage = parseFloat(document.getElementById("percentage").value) || 0;
-    const earnings = tattooValue * (percentage / 100);
-    const cashTip = parseFloat(document.getElementById("cash-tip").value) || 0;
-    const cardTip = parseFloat(document.getElementById("card-tip").value) || 0;
-    const suppliesExpense = parseFloat(document.getElementById("supplies-expense").value) || 0;
-    const miscExpense = parseFloat(document.getElementById("misc-expense").value) || 0;
-
-    transactions.push({ date, tattooValue, earnings, cashTip, cardTip, suppliesExpense, miscExpense });
-    localStorage.setItem("transactions", JSON.stringify(transactions));
-    updateLog();
-    resetFields();
-  }
-
-  function updateLog() {
-    const log = document.getElementById("transaction-log");
-    log.innerHTML = '';
-    transactions.forEach((trans, index) => {
-      const li = document.createElement("li");
-      li.textContent = `${trans.date} - Tattoo: $${trans.tattooValue}, Earnings: $${trans.earnings.toFixed(2)}, Cash Tip: $${trans.cashTip}, Card Tip: $${trans.cardTip}, Supplies: $${trans.suppliesExpense}, Misc: $${trans.miscExpense}`;
-      log.appendChild(li);
-    });
-  }
-
-  function resetFields() {
-    document.getElementById("tattoo-value").value = '';
-    document.getElementById("percentage").value = '';
-    document.getElementById("cash-tip").value = '';
-    document.getElementById("card-tip").value = '';
-    document.getElementById("supplies-expense").value = '';
-    document.getElementById("misc-expense").value = '';
-  }
-
-  function calculateNetProfit() {
-    const startDate = document.getElementById("start-date").value;
-    const endDate = document.getElementById("end-date").value;
-    let grossEarnings = 0, totalTips = 0, supplyExpenses = 0, miscExpenses = 0;
-
-    transactions.forEach(trans => {
-      if (trans.date >= startDate && trans.date <= endDate) {
-        grossEarnings += trans.earnings;
-        totalTips += (trans.cashTip + trans.cardTip);
-        supplyExpenses += trans.suppliesExpense;
-        miscExpenses += trans.miscExpense;
-      }
-    });
-
-    const netProfit = grossEarnings + totalTips - (supplyExpenses + miscExpenses);
-    document.getElementById("gross-earnings").textContent = grossEarnings.toFixed(2);
-    document.getElementById("total-tips").textContent = totalTips.toFixed(2);
-    document.getElementById("supply-expenses").textContent = supplyExpenses.toFixed(2);
-    document.getElementById("misc-expenses").textContent = miscExpenses.toFixed(2);
-    document.getElementById("net-profit").textContent = netProfit.toFixed(2);
-  }
-
-  function undoLastTransaction() {
-    transactions.pop();
-    localStorage.setItem("transactions", JSON.stringify(transactions));
-    updateLog();
-  }
-
-  function exportLog() {
-    const headers = "Date,Tattoo Value,Earnings,Cash Tip,Card Tip,Supplies Expense,Misc Expense\n";
-    const csvContent = transactions.map(trans => 
-      `${trans.date},${trans.tattooValue},${trans.earnings.toFixed(2)},${trans.cashTip},${trans.cardTip},${trans.suppliesExpense},${trans.miscExpense}`
-    ).join("\n");
-    const blob = new Blob([headers + csvContent], { type: "text/csv" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = "transaction-log.csv";
-    link.click();
-  }
-
-  // Initialize the transaction log on page load
-  updateLog();
-</script>
-
+           // Save to Firestore
+           db.collection("transactions").add({
+               date: date,
+               tattooValue: tattooValue,
+               percentageEarned: percentageEarned,
+               cashTip: cashTip,
+               cardTip: cardTip,
+               suppliesExpense: suppliesExpense,
+               miscExpense: miscExpense,
+               profitBeforeExpenses: profitBeforeExpenses,
+               netProfit: netProfit
+           }).then(() => {
+               alert("Transaction recorded successfully!");
+           }).catch((error) => {
+               console.error("Error recording transaction: ", error);
+           });
+       }
+   </script>
 </body>
-</html>
