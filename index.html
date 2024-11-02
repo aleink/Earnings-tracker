@@ -41,9 +41,21 @@
             width: 80%;
             text-align: center;
         }
-        #netProfitDisplay {
+        #netProfitDisplay, #dailySummary, #grandTotalSummary {
             margin-top: 20px;
             font-size: 1.2em;
+        }
+        #transactionLog {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 20px;
+            background-color: #222;
+            padding: 10px;
+            border-radius: 10px;
+        }
+        #transactionLog p {
+            margin: 5px 0;
+            font-size: 0.9em;
         }
     </style>
 </head>
@@ -66,12 +78,22 @@
         <input type="text" id="percentageEarned" placeholder="Percentage Earned (%)">
         <input type="text" id="cashTip" placeholder="Cash Tip ($)">
         <input type="text" id="cardTip" placeholder="Card Tip ($)">
+        <input type="text" id="description" placeholder="Tattoo Description (Optional)">
 
         <button onclick="recordTransaction()">Record Transaction</button>
         <button onclick="calculateNetProfit()">Calculate Net Profit</button>
+        <button onclick="resetLog()">Reset Log</button>
+        <button onclick="undoTransaction()">Undo Last Transaction</button>
 
         <p id="netProfitDisplay">Net Profit: $0.00</p>
+        <div id="dailySummary">Daily Summary: Gross: $0.00, Tips: $0.00, Net: $0.00</div>
+        <div id="grandTotalSummary">Grand Total: Gross: $0.00, Tips: $0.00, Net: $0.00</div>
         <button onclick="logOut()">Log Out</button>
+        
+        <div id="transactionLog">
+            <h3>Transaction Log</h3>
+            <p>No transactions recorded.</p>
+        </div>
     </div>
 
     <!-- Firebase setup using CDN -->
@@ -95,11 +117,12 @@
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
+        let lastTransactionId = null;
 
-        // Show or hide sections based on login state
         function showMainContent() {
             document.getElementById("login-container").style.display = "none";
             document.getElementById("main-content").style.display = "block";
+            loadTransactions();
         }
 
         function showLogin() {
@@ -107,7 +130,6 @@
             document.getElementById("main-content").style.display = "none";
         }
 
-        // Check login state on page load
         auth.onAuthStateChanged((user) => {
             if (user) {
                 showMainContent();
@@ -116,88 +138,130 @@
             }
         });
 
-        // Sign Up function
         function signUp() {
             const email = document.getElementById("email").value;
             const password = document.getElementById("password").value;
             auth.createUserWithEmailAndPassword(email, password)
-                .then((userCredential) => {
-                    alert("Sign-up successful!");
-                    showMainContent();
-                })
-                .catch((error) => {
-                    alert(error.message);
-                });
+                .then(() => alert("Sign-up successful!"))
+                .catch(error => alert(error.message));
         }
 
-        // Log In function
         function logIn() {
             const email = document.getElementById("email").value;
             const password = document.getElementById("password").value;
             auth.signInWithEmailAndPassword(email, password)
-                .then((userCredential) => {
-                    alert("Log-in successful!");
-                    showMainContent();
-                })
-                .catch((error) => {
-                    alert(error.message);
-                });
+                .then(() => alert("Log-in successful!"))
+                .catch(error => alert(error.message));
         }
 
-        // Log Out function
         function logOut() {
-            auth.signOut()
-                .then(() => {
-                    alert("Logged out successfully!");
-                    showLogin();
-                })
-                .catch((error) => {
-                    alert(error.message);
-                });
+            auth.signOut().then(() => alert("Logged out successfully!")).catch(error => alert(error.message));
         }
 
-        // Record Transaction function
         function recordTransaction() {
             const totalTattooValue = parseFloat(document.getElementById("totalTattooValue").value) || 0;
             const percentageEarned = parseFloat(document.getElementById("percentageEarned").value) || 0;
             const cashTip = parseFloat(document.getElementById("cashTip").value) || 0;
             const cardTip = parseFloat(document.getElementById("cardTip").value) || 0;
+            const description = document.getElementById("description").value;
 
-            // Calculate the earnings
             const earnedFromTattoo = totalTattooValue * (percentageEarned / 100);
             const earnings = earnedFromTattoo + cashTip + cardTip;
 
-            // Save transaction to Firestore
             db.collection("earnings").add({
                 userId: auth.currentUser.uid,
                 totalTattooValue,
                 percentageEarned,
                 cashTip,
                 cardTip,
+                description,
                 earnings,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            }).then(() => {
+            }).then((docRef) => {
+                lastTransactionId = docRef.id;
                 alert("Transaction recorded!");
-            }).catch((error) => {
-                alert("Error recording transaction: " + error.message);
-            });
+                loadTransactions();
+            }).catch(error => alert("Error recording transaction: " + error.message));
         }
 
-        // Calculate Net Profit function
         function calculateNetProfit() {
             db.collection("earnings")
                 .where("userId", "==", auth.currentUser.uid)
                 .get()
-                .then((querySnapshot) => {
+                .then(querySnapshot => {
                     let netProfit = 0;
-                    querySnapshot.forEach((doc) => {
+                    querySnapshot.forEach(doc => {
                         netProfit += doc.data().earnings;
                     });
                     document.getElementById("netProfitDisplay").innerText = "Net Profit: $" + netProfit.toFixed(2);
                 })
-                .catch((error) => {
-                    alert("Error calculating net profit: " + error.message);
+                .catch(error => alert("Error calculating net profit: " + error.message));
+        }
+
+        function loadTransactions() {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            let dailyGross = 0, dailyTips = 0, dailyNet = 0;
+            let grandGross = 0, grandTips = 0, grandNet = 0;
+
+            db.collection("earnings")
+                .where("userId", "==", auth.currentUser.uid)
+                .orderBy("timestamp", "desc")
+                .get()
+                .then(querySnapshot => {
+                    document.getElementById("transactionLog").innerHTML = "<h3>Transaction Log</h3>";
+                    querySnapshot.forEach(doc => {
+                        const data = doc.data();
+                        const date = data.timestamp ? data.timestamp.toDate() : new Date();
+                        const isToday = date >= today;
+
+                        const gross = data.totalTattooValue;
+                        const tips = data.cashTip + data.cardTip;
+                        const net = data.earnings;
+
+                        grandGross += gross;
+                        grandTips += tips;
+                        grandNet += net;
+
+                        if (isToday) {
+                            dailyGross += gross;
+                            dailyTips += tips;
+                            dailyNet += net;
+                        }
+
+                        document.getElementById("transactionLog").innerHTML += `<p>${date.toLocaleString()}: $${gross} gross, $${tips} tips, $${net} net. Description: ${data.description || "N/A"}</p>`;
+                    });
+
+                    document.getElementById("dailySummary").innerText = `Daily Summary: Gross: $${dailyGross.toFixed(2)}, Tips: $${dailyTips.toFixed(2)}, Net: $${dailyNet.toFixed(2)}`;
+                    document.getElementById("grandTotalSummary").innerText = `Grand Total: Gross: $${grandGross.toFixed(2)}, Tips: $${grandTips.toFixed(2)}, Net: $${grandNet.toFixed(2)}`;
                 });
+        }
+
+        function resetLog() {
+            if (confirm("Are you sure you want to reset all transactions?")) {
+                db.collection("earnings")
+                    .where("userId", "==", auth.currentUser.uid)
+                    .get()
+                    .then(querySnapshot => {
+                        querySnapshot.forEach(doc => doc.ref.delete());
+                        alert("All transactions reset!");
+                        loadTransactions();
+                    });
+            }
+        }
+
+        function undoTransaction() {
+            if (lastTransactionId) {
+                db.collection("earnings").doc(lastTransactionId).delete()
+                    .then(() => {
+                        alert("Last transaction undone!");
+                        lastTransactionId = null;
+                        loadTransactions();
+                    })
+                    .catch(error => alert("Error undoing transaction: " + error.message));
+            } else {
+                alert("No transaction to undo.");
+            }
         }
     </script>
 </body>
