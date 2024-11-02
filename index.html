@@ -4,13 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Club Tattoo Earnings Tracker</title>
-
-    <!-- Firebase SDK Scripts -->
+    <!-- Firebase CDN Scripts -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
-
-    <!-- Firebase Configuration and Initialization -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+    <!-- Firebase Initialization -->
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyDwkAyX5RSMXDSe7PHSd7ZwI27Ed5uEhKo",
@@ -24,11 +22,11 @@
 
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-        const auth = firebase.auth();
-    </script>
 
-    <!-- Styles -->
+        // Initialize Firebase Authentication and Firestore
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+    </script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -44,76 +42,53 @@
             max-width: 400px;
             padding: 20px;
             background-color: #1f1f1f;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+            text-align: center;
         }
-        input[type="email"], input[type="password"], input[type="number"] {
+        input {
             width: 100%;
             padding: 10px;
             margin: 10px 0;
             border: none;
             border-radius: 5px;
-            background-color: #333;
-            color: #ffffff;
         }
         button {
             width: 100%;
             padding: 10px;
-            margin-top: 10px;
+            margin: 10px 0;
             border: none;
             border-radius: 5px;
-            background-color: #007aff;
-            color: #ffffff;
             cursor: pointer;
+            background-color: #007aff;
+            color: white;
+            font-size: 16px;
         }
         button:hover {
             background-color: #005bb5;
-        }
-        h2 {
-            text-align: center;
-            color: #ffffff;
-        }
-        #transaction-section, #logout-button {
-            display: none;
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <!-- Login Section -->
-    <div id="login-section">
-        <h2>Club Tattoo Earnings Tracker</h2>
-        <input type="email" id="email" placeholder="Email">
-        <input type="password" id="password" placeholder="Password">
-        <button onclick="signUp()">Sign Up</button>
-        <button onclick="logIn()">Log In</button>
-    </div>
-
-    <!-- Transaction Section -->
-    <div id="transaction-section">
-        <h2>Record Transaction</h2>
-        <input type="number" id="tattoo-value" placeholder="Total Tattoo Value">
-        <input type="number" id="percentage-earned" placeholder="Percentage Earned (%)">
-        <input type="number" id="cash-tip" placeholder="Cash Tip">
-        <input type="number" id="card-tip" placeholder="Card Tip">
-        <button onclick="recordTransaction()">Record Transaction</button>
-        <button id="logout-button" onclick="logOut()">Log Out</button>
-    </div>
+    <h2>Club Tattoo Earnings Tracker</h2>
+    <input type="email" id="email" placeholder="Email">
+    <input type="password" id="password" placeholder="Password">
+    <button onclick="signUp()">Sign Up</button>
+    <button onclick="logIn()">Log In</button>
 </div>
 
-<!-- Firebase Authentication and Firestore Scripts -->
 <script>
-    // Authentication Functions
     function signUp() {
         const email = document.getElementById("email").value;
         const password = document.getElementById("password").value;
         auth.createUserWithEmailAndPassword(email, password)
-            .then(userCredential => {
-                console.log("User signed up:", userCredential.user);
+            .then((userCredential) => {
+                alert("Sign up successful!");
             })
-            .catch(error => {
-                console.error("Error signing up:", error.message);
+            .catch((error) => {
+                alert("Error: " + error.message);
             });
     }
 
@@ -121,59 +96,12 @@
         const email = document.getElementById("email").value;
         const password = document.getElementById("password").value;
         auth.signInWithEmailAndPassword(email, password)
-            .then(userCredential => {
-                console.log("User logged in:", userCredential.user);
+            .then((userCredential) => {
+                alert("Login successful!");
             })
-            .catch(error => {
-                console.error("Error logging in:", error.message);
+            .catch((error) => {
+                alert("Error: " + error.message);
             });
-    }
-
-    function logOut() {
-        auth.signOut()
-            .then(() => {
-                console.log("User logged out");
-            })
-            .catch(error => {
-                console.error("Error logging out:", error.message);
-            });
-    }
-
-    auth.onAuthStateChanged(user => {
-        if (user) {
-            document.getElementById("transaction-section").style.display = "block";
-            document.getElementById("login-section").style.display = "none";
-            document.getElementById("logout-button").style.display = "block";
-        } else {
-            document.getElementById("transaction-section").style.display = "none";
-            document.getElementById("login-section").style.display = "block";
-            document.getElementById("logout-button").style.display = "none";
-        }
-    });
-
-    // Function to Record Transaction
-    function recordTransaction() {
-        const user = auth.currentUser;
-        if (user) {
-            const transaction = {
-                tattooValue: parseFloat(document.getElementById("tattoo-value").value),
-                percentageEarned: parseFloat(document.getElementById("percentage-earned").value),
-                cashTip: parseFloat(document.getElementById("cash-tip").value),
-                cardTip: parseFloat(document.getElementById("card-tip").value),
-                date: new Date().toISOString()
-            };
-
-            db.collection("users").doc(user.uid).collection("transactions").add(transaction)
-                .then(() => {
-                    console.log("Transaction recorded:", transaction);
-                    alert("Transaction recorded successfully!");
-                })
-                .catch(error => {
-                    console.error("Error recording transaction:", error.message);
-                });
-        } else {
-            alert("Please log in to record a transaction.");
-        }
     }
 </script>
 
