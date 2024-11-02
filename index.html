@@ -9,206 +9,157 @@
             font-family: Arial, sans-serif;
             background-color: #121212;
             color: white;
+            text-align: center;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             min-height: 100vh;
             margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
         }
-        .container {
+
+        .container, .main-content {
             max-width: 500px;
             width: 100%;
             padding: 20px;
             background-color: #333;
             border-radius: 10px;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
-            text-align: center;
-        }
-        .summary-box, .log-box {
-            background-color: #444;
-            padding: 10px;
+            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.3);
             margin: 10px 0;
-            border-radius: 8px;
-            box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.2);
         }
-        input, button {
-            padding: 10px;
-            margin: 5px;
+
+        h1 {
+            font-size: 1.8em;
+            margin-bottom: 0.5em;
+        }
+
+        h2 {
+            font-size: 1.5em;
+            margin-bottom: 0.5em;
+        }
+
+        input[type="text"], input[type="email"], input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
             border: none;
             border-radius: 5px;
-            width: calc(100% - 20px);
+            font-size: 1em;
+            box-sizing: border-box;
+            color: #333;
         }
+
         button {
-            background-color: #007aff;
-            color: white;
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 5px;
             cursor: pointer;
+            color: white;
+            background: linear-gradient(45deg, #007aff, #0051a3);
+            font-size: 1em;
+            transition: background 0.3s ease;
+        }
+
+        button:hover {
+            background: linear-gradient(45deg, #0051a3, #007aff);
+        }
+
+        .summary-box, .transaction-log {
+            background-color: #444;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            text-align: left;
+            box-sizing: border-box;
+        }
+
+        .summary-box {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.1em;
+        }
+
+        .summary-item {
+            flex: 1;
+            text-align: center;
+        }
+
+        .transaction-log h3 {
+            text-align: center;
+            font-size: 1.3em;
+            margin-bottom: 10px;
+        }
+
+        @media (max-width: 500px) {
+            h1 {
+                font-size: 1.5em;
+            }
+
+            h2 {
+                font-size: 1.2em;
+            }
+
+            button {
+                font-size: 0.9em;
+            }
+
+            .summary-box {
+                font-size: 0.9em;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Welcome to your Earnings Tracker!</h1>
+    <div class="container" id="login-container">
+        <h1>Club Tattoo Earnings Tracker</h1>
+        <input type="email" id="email" placeholder="Email"><br>
+        <input type="password" id="password" placeholder="Password"><br>
+        <button onclick="signUp()">Sign Up</button>
+        <button onclick="logIn()">Log In</button>
+    </div>
+
+    <div class="main-content" id="main-content" style="display:none;">
+        <h2>Welcome to your Earnings Tracker!</h2>
         <p>Here you can start tracking your earnings and expenses.</p>
-        
-        <!-- Input fields -->
-        <input type="number" id="totalTattooValue" placeholder="Total Tattoo Value ($)">
-        <input type="number" id="percentageEarned" placeholder="Percentage Earned (%)">
-        <input type="number" id="cashTip" placeholder="Cash Tip ($)">
-        <input type="number" id="cardTip" placeholder="Card Tip ($)">
+
+        <input type="text" id="totalTattooValue" placeholder="Total Tattoo Value ($)">
+        <input type="text" id="percentageEarned" placeholder="Percentage Earned (%)">
+        <input type="text" id="cashTip" placeholder="Cash Tip ($)">
+        <input type="text" id="cardTip" placeholder="Card Tip ($)">
         <input type="text" id="description" placeholder="Description (optional)">
-        
-        <!-- Action buttons -->
+
         <button onclick="recordTransaction()">Record Transaction</button>
         <button onclick="resetLog()">Reset Log</button>
-        <button onclick="undoTransaction()">Undo Last Transaction</button>
+        <button onclick="undoLastTransaction()">Undo Last Transaction</button>
         <button onclick="logOut()">Log Out</button>
-        
-        <!-- Summaries -->
-        <div id="dailySummary" class="summary-box">Daily Summary: Gross: $0.00, Tips: $0.00, Net: $0.00</div>
-        <div id="grandTotalSummary" class="summary-box">Grand Total: Gross: $0.00, Tips: $0.00, Net: $0.00</div>
-        
-        <!-- Transaction log -->
-        <div class="log-box">
+
+        <div class="summary-box">
+            <div class="summary-item">
+                <strong>Daily Summary</strong><br>
+                Gross: $<span id="dailyGross">0.00</span>, Tips: $<span id="dailyTips">0.00</span>, Net: $<span id="dailyNet">0.00</span>
+            </div>
+        </div>
+
+        <div class="summary-box">
+            <div class="summary-item">
+                <strong>Grand Total</strong><br>
+                Gross: $<span id="grandGross">0.00</span>, Tips: $<span id="grandTips">0.00</span>, Net: $<span id="grandNet">0.00</span>
+            </div>
+        </div>
+
+        <div class="transaction-log">
             <h3>Transaction Log</h3>
             <div id="transactionLog">No transactions recorded.</div>
         </div>
     </div>
 
-    <!-- Firebase setup using CDN -->
-    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
-
     <script>
-        // Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyDwkAyX5RSMXDSe7PHSd7ZwI27Ed5uEhKo",
-            authDomain: "club-tattoo-earnings-tracker.firebaseapp.com",
-            projectId: "club-tattoo-earnings-tracker",
-            storageBucket: "club-tattoo-earnings-tracker.appspot.com",
-            messagingSenderId: "411443089106",
-            appId: "1:411443089106:web:93a23cea86e8d008d7a70b",
-            measurementId: "G-6W7SQXCWJC"
-        };
-
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
-
-        let lastTransactionId = null;
-
-        function showMainContent() {
-            document.getElementById("login-container").style.display = "none";
-            document.getElementById("main-content").style.display = "block";
-        }
-
-        function showLogin() {
-            document.getElementById("login-container").style.display = "block";
-            document.getElementById("main-content").style.display = "none";
-        }
-
-        auth.onAuthStateChanged((user) => {
-            if (user) {
-                loadTransactions();
-            } else {
-                showLogin();
-            }
-        });
-
-        function recordTransaction() {
-            const totalTattooValue = parseFloat(document.getElementById("totalTattooValue").value) || 0;
-            const percentageEarned = (parseFloat(document.getElementById("percentageEarned").value) || 0) / 100;
-            const cashTip = parseFloat(document.getElementById("cashTip").value) || 0;
-            const cardTip = parseFloat(document.getElementById("cardTip").value) || 0;
-            const description = document.getElementById("description").value || "N/A";
-
-            const gross = totalTattooValue * percentageEarned;
-            const tips = cashTip + cardTip;
-            const net = gross + tips;
-
-            db.collection("earnings").add({
-                userId: auth.currentUser.uid,
-                totalTattooValue,
-                percentageEarned,
-                cashTip,
-                cardTip,
-                description,
-                gross,
-                tips,
-                net,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            }).then((docRef) => {
-                lastTransactionId = docRef.id;
-                loadTransactions();
-            }).catch((error) => {
-                alert("Error recording transaction: " + error.message);
-            });
-        }
-
-        function loadTransactions() {
-            const today = new Date().toDateString();
-            db.collection("earnings")
-                .where("userId", "==", auth.currentUser.uid)
-                .get()
-                .then((querySnapshot) => {
-                    let dailyGross = 0, dailyTips = 0, dailyNet = 0;
-                    let grandGross = 0, grandTips = 0, grandNet = 0;
-                    let logHtml = "";
-
-                    querySnapshot.forEach((doc) => {
-                        const data = doc.data();
-                        const date = data.timestamp ? data.timestamp.toDate().toDateString() : today;
-                        const isToday = date === today;
-
-                        grandGross += data.gross;
-                        grandTips += data.tips;
-                        grandNet += data.net;
-
-                        if (isToday) {
-                            dailyGross += data.gross;
-                            dailyTips += data.tips;
-                            dailyNet += data.net;
-                        }
-
-                        logHtml += `<p>${date}: $${data.gross.toFixed(2)} gross, $${data.tips.toFixed(2)} tips, $${data.net.toFixed(2)} net. Description: ${data.description}</p>`;
-                    });
-
-                    document.getElementById("dailySummary").innerText = `Daily Summary: Gross: $${dailyGross.toFixed(2)}, Tips: $${dailyTips.toFixed(2)}, Net: $${dailyNet.toFixed(2)}`;
-                    document.getElementById("grandTotalSummary").innerText = `Grand Total: Gross: $${grandGross.toFixed(2)}, Tips: $${grandTips.toFixed(2)}, Net: $${grandNet.toFixed(2)}`;
-                    document.getElementById("transactionLog").innerHTML = logHtml || "No transactions recorded.";
-                });
-        }
-
-        function resetLog() {
-            if (confirm("Are you sure you want to reset all transactions?")) {
-                db.collection("earnings")
-                    .where("userId", "==", auth.currentUser.uid)
-                    .get()
-                    .then(querySnapshot => {
-                        querySnapshot.forEach(doc => doc.ref.delete());
-                        loadTransactions();
-                    });
-            }
-        }
-
-        function undoTransaction() {
-            if (lastTransactionId) {
-                db.collection("earnings").doc(lastTransactionId).delete()
-                    .then(() => {
-                        lastTransactionId = null;
-                        loadTransactions();
-                    })
-                    .catch(error => alert("Error undoing transaction: " + error.message));
-            } else {
-                alert("No transaction to undo.");
-            }
-        }
-
-        function logOut() {
-            auth.signOut().then(() => showLogin());
-        }
+        // Firebase and script code here
     </script>
 </body>
 </html>
