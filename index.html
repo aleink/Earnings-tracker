@@ -78,11 +78,11 @@
     // Record Transaction function
     function recordTransaction() {
         const totalTattooValue = parseFloat(document.getElementById("totalTattooValue").value) || 0;
-        const percentageEarned = (parseFloat(document.getElementById("percentageEarned").value) || 0) / 100;
+        const percentageEarned = parseFloat(document.getElementById("percentageEarned").value) || 0;
         const cashTip = parseFloat(document.getElementById("cashTip").value) || 0;
         const cardTip = parseFloat(document.getElementById("cardTip").value) || 0;
 
-        const earnings = (totalTattooValue * percentageEarned) + cashTip + cardTip;
+        const earnings = (totalTattooValue * (percentageEarned / 100)) + cashTip + cardTip;
 
         // Save transaction to Firestore
         db.collection("earnings").add({
@@ -116,4 +116,18 @@
                 alert("Error calculating net profit: " + error.message);
             });
     }
+
+    // Format input fields to show symbols
+    document.getElementById("percentageEarned").addEventListener("input", function () {
+        this.value = this.value.replace(/[^0-9.]/g, "") + "%"; // Only allow numbers and append %
+    });
+    document.getElementById("totalTattooValue").addEventListener("input", function () {
+        this.value = "$" + this.value.replace(/[^0-9.]/g, ""); // Only allow numbers and prepend $
+    });
+    document.getElementById("cashTip").addEventListener("input", function () {
+        this.value = "$" + this.value.replace(/[^0-9.]/g, ""); // Only allow numbers and prepend $
+    });
+    document.getElementById("cardTip").addEventListener("input", function () {
+        this.value = "$" + this.value.replace(/[^0-9.]/g, ""); // Only allow numbers and prepend $
+    });
 </script>
