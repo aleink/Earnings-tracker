@@ -159,11 +159,12 @@
         // Record Transaction function
         function recordTransaction() {
             const totalTattooValue = parseFloat(document.getElementById("totalTattooValue").value) || 0;
-            const percentageEarned = (parseFloat(document.getElementById("percentageEarned").value) || 0) / 100;
+            const percentageEarned = parseFloat(document.getElementById("percentageEarned").value) || 0;
             const cashTip = parseFloat(document.getElementById("cashTip").value) || 0;
             const cardTip = parseFloat(document.getElementById("cardTip").value) || 0;
 
-            const earnings = (totalTattooValue * percentageEarned) + cashTip + cardTip;
+            // Correct calculation of earnings
+            const earnings = (totalTattooValue * (percentageEarned / 100)) + cashTip + cardTip;
 
             // Save transaction to Firestore
             db.collection("earnings").add({
