@@ -1,185 +1,202 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Club Tattoo Earnings Tracker</title>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      background-color: #121212;
-      color: #fff;
-    }
-    .container {
-      text-align: center;
-      max-width: 400px;
-      padding: 20px;
-      background: #333;
-      border-radius: 8px;
-    }
-    input, button {
-      margin: 10px 0;
-      padding: 10px;
-      width: 100%;
-      border-radius: 5px;
-      border: none;
-      font-size: 16px;
-    }
-    button {
-      background-color: #007bff;
-      color: #fff;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #0056b3;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Club Tattoo Earnings Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: white;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container, .main-content {
+            max-width: 500px;
+            padding: 20px;
+            background-color: #333;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            color: white;
+            background-color: #007aff;
+        }
+        input {
+            padding: 10px;
+            margin: 5px;
+            width: calc(100% - 20px);
+            border-radius: 5px;
+            border: 1px solid #444;
+            background-color: #222;
+            color: white;
+        }
+    </style>
 </head>
 <body>
-  <div class="container" id="app">
-    <h2>Welcome to your Earnings Tracker!</h2>
-    <div id="tracker">
-      <input type="number" id="totalValue" placeholder="Total Tattoo Value">
-      <input type="number" id="percentageEarned" placeholder="Percentage Earned">
-      <input type="number" id="cashTip" placeholder="Cash Tip">
-      <input type="number" id="cardTip" placeholder="Card Tip">
-      <button onclick="recordTransaction()">Record Transaction</button>
-
-      <h3>Filter by Date Range</h3>
-      <input type="date" id="startDate">
-      <input type="date" id="endDate">
-      <button onclick="calculateNetProfit()">Calculate Net Profit</button>
-
-      <h3>Summary</h3>
-      <p id="earningsSummary">Gross Earnings: $0<br>Total Tips: $0<br>Profit Before Expenses: $0</p>
-      <button onclick="exportCSV()">Export as CSV</button>
-      <button onclick="logOut()">Log Out</button>
+    <!-- Login Container -->
+    <div class="container" id="login-container">
+        <h1>Club Tattoo Earnings Tracker</h1>
+        <input type="email" id="email" placeholder="Email"><br>
+        <input type="password" id="password" placeholder="Password"><br>
+        <button onclick="signUp()">Sign Up</button>
+        <button onclick="logIn()">Log In</button>
     </div>
-  </div>
 
-  <script>
-    // Firebase configuration
-    const firebaseConfig = {
-      apiKey: "AIzaSyDwkAyX5RSMXDSe7PHSd7ZwI27Ed5uEhKo",
-      authDomain: "club-tattoo-earnings-tracker.firebaseapp.com",
-      projectId: "club-tattoo-earnings-tracker",
-      storageBucket: "club-tattoo-earnings-tracker.appspot.com",
-      messagingSenderId: "411443089106",
-      appId: "1:411443089106:web:93a23cea86e8d008d7a70b",
-      measurementId: "G-6W7SQXCWJC"
-    };
+    <!-- Main Content (Visible after login) -->
+    <div class="main-content" id="main-content" style="display: none;">
+        <h2>Welcome to your Earnings Tracker!</h2>
+        <p>Here you can start tracking your earnings and expenses.</p>
+        
+        <!-- Earnings and Expenses Form -->
+        <input type="number" id="totalTattooValue" placeholder="Total Tattoo Value"><br>
+        <input type="number" id="percentageEarned" placeholder="Percentage Earned (%)"><br>
+        <input type="number" id="cashTip" placeholder="Cash Tip"><br>
+        <input type="number" id="cardTip" placeholder="Card Tip"><br>
+        
+        <button onclick="recordTransaction()">Record Transaction</button>
+        <button onclick="calculateNetProfit()">Calculate Net Profit</button>
 
-    // Initialize Firebase
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
+        <!-- Display Area for Net Profit -->
+        <div id="netProfitDisplay" style="margin-top: 20px;"></div>
+        
+        <button onclick="logOut()">Log Out</button>
+    </div>
 
-    // Record transaction
-    async function recordTransaction() {
-      const userId = auth.currentUser.uid;
-      const totalValue = parseFloat(document.getElementById("totalValue").value) || 0;
-      const percentageEarned = parseFloat(document.getElementById("percentageEarned").value) || 0;
-      const cashTip = parseFloat(document.getElementById("cashTip").value) || 0;
-      const cardTip = parseFloat(document.getElementById("cardTip").value) || 0;
-      const earnings = (totalValue * (percentageEarned / 100)) + cashTip + cardTip;
-      const date = new Date().toISOString().split("T")[0];
+    <!-- Firebase setup using CDN -->
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
 
-      try {
-        await db.collection("earnings").add({
-          userId,
-          totalValue,
-          percentageEarned,
-          cashTip,
-          cardTip,
-          earnings,
-          date
-        });
-        alert("Transaction recorded successfully!");
-      } catch (error) {
-        console.error("Error recording transaction: ", error);
-      }
-    }
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDwkAyX5RSMXDSe7PHSd7ZwI27Ed5uEhKo",
+            authDomain: "club-tattoo-earnings-tracker.firebaseapp.com",
+            projectId: "club-tattoo-earnings-tracker",
+            storageBucket: "club-tattoo-earnings-tracker.appspot.com",
+            messagingSenderId: "411443089106",
+            appId: "1:411443089106:web:93a23cea86e8d008d7a70b",
+            measurementId: "G-6W7SQXCWJC"
+        };
 
-    // Calculate net profit within date range
-    async function calculateNetProfit() {
-      const userId = auth.currentUser.uid;
-      const startDate = document.getElementById("startDate").value;
-      const endDate = document.getElementById("endDate").value;
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
 
-      if (!startDate || !endDate) {
-        alert("Please select both start and end dates.");
-        return;
-      }
+        // Show or hide sections based on login state
+        function showMainContent() {
+            document.getElementById("login-container").style.display = "none";
+            document.getElementById("main-content").style.display = "block";
+        }
 
-      let grossEarnings = 0;
-      let totalTips = 0;
+        function showLogin() {
+            document.getElementById("login-container").style.display = "block";
+            document.getElementById("main-content").style.display = "none";
+        }
 
-      try {
-        const snapshot = await db.collection("earnings")
-          .where("userId", "==", userId)
-          .where("date", ">=", startDate)
-          .where("date", "<=", endDate)
-          .get();
-
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          grossEarnings += data.earnings;
-          totalTips += data.cashTip + data.cardTip;
+        // Check login state on page load
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                showMainContent();
+            } else {
+                showLogin();
+            }
         });
 
-        const profitBeforeExpenses = grossEarnings;
+        // Sign Up function
+        function signUp() {
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+            auth.createUserWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    alert("Sign-up successful!");
+                    showMainContent();
+                })
+                .catch((error) => {
+                    alert(error.message);
+                });
+        }
 
-        document.getElementById("earningsSummary").innerHTML = `
-          Gross Earnings: $${grossEarnings.toFixed(2)}<br>
-          Total Tips: $${totalTips.toFixed(2)}<br>
-          Profit Before Expenses: $${profitBeforeExpenses.toFixed(2)}
-        `;
-      } catch (error) {
-        console.error("Error calculating net profit: ", error);
-      }
-    }
+        // Log In function
+        function logIn() {
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+            auth.signInWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    alert("Log-in successful!");
+                    showMainContent();
+                })
+                .catch((error) => {
+                    alert(error.message);
+                });
+        }
 
-    // Export data as CSV
-    async function exportCSV() {
-      const userId = auth.currentUser.uid;
-      const snapshot = await db.collection("earnings").where("userId", "==", userId).get();
+        // Log Out function
+        function logOut() {
+            auth.signOut()
+                .then(() => {
+                    alert("Logged out successfully!");
+                    showLogin();
+                })
+                .catch((error) => {
+                    alert(error.message);
+                });
+        }
 
-      let csvContent = "Date,Total Value,Percentage Earned,Cash Tip,Card Tip,Earnings\n";
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        csvContent += `${data.date},${data.totalValue},${data.percentageEarned},${data.cashTip},${data.cardTip},${data.earnings}\n`;
-      });
+        // Record Transaction function
+        function recordTransaction() {
+            const totalTattooValue = parseFloat(document.getElementById("totalTattooValue").value);
+            const percentageEarned = parseFloat(document.getElementById("percentageEarned").value) / 100;
+            const cashTip = parseFloat(document.getElementById("cashTip").value) || 0;
+            const cardTip = parseFloat(document.getElementById("cardTip").value) || 0;
 
-      const blob = new Blob([csvContent], { type: "text/csv" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "earnings.csv";
-      link.click();
-    }
+            const earnings = (totalTattooValue * percentageEarned) + cashTip + cardTip;
+            
+            // Save transaction to Firestore
+            db.collection("earnings").add({
+                userId: auth.currentUser.uid,
+                totalTattooValue,
+                percentageEarned,
+                cashTip,
+                cardTip,
+                earnings,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            }).then(() => {
+                alert("Transaction recorded!");
+            }).catch((error) => {
+                alert("Error recording transaction: " + error.message);
+            });
+        }
 
-    // Log out user
-    function logOut() {
-      auth.signOut().then(() => {
-        location.reload();
-      }).catch((error) => {
-        console.error("Error logging out:", error);
-      });
-    }
-
-    // Authentication state observer
-    auth.onAuthStateChanged(user => {
-      if (!user) {
-        location.href = "/"; // Redirect to login if not authenticated
-      }
-    });
-  </script>
+        // Calculate Net Profit function
+        function calculateNetProfit() {
+            db.collection("earnings")
+                .where("userId", "==", auth.currentUser.uid)
+                .get()
+                .then((querySnapshot) => {
+                    let netProfit = 0;
+                    querySnapshot.forEach((doc) => {
+                        netProfit += doc.data().earnings;
+                    });
+                    document.getElementById("netProfitDisplay").innerText = "Net Profit: $" + netProfit.toFixed(2);
+                })
+                .catch((error) => {
+                    alert("Error calculating net profit: " + error.message);
+                });
+        }
+    </script>
 </body>
 </html>
