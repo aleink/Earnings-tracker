@@ -105,6 +105,21 @@
             font-size: 0.9em;
         }
 
+        /* Date Range Summary Box */
+        #date-range-summary {
+            background-color: #3a3a4f;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            color: #d0d0d0;
+            text-align: left;
+        }
+
+        #dateRangeSummary {
+            margin-top: 10px;
+            font-size: 1.1em;
+        }
+
         /* Mobile Responsive */
         @media (max-width: 500px) {
             h1, h2, h3 {
@@ -159,7 +174,7 @@
         </div>
 
         <!-- Date Range Summary -->
-        <div class="container" id="date-range-summary">
+        <div id="date-range-summary">
             <h3>View Summary by Date Range</h3>
             <input type="date" id="startDate" placeholder="Start Date">
             <input type="date" id="endDate" placeholder="End Date">
@@ -195,7 +210,6 @@
             measurementId: "G-6W7SQXCWJC"
         };
 
-        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
@@ -207,48 +221,26 @@
             displayLog();
         }
 
-        function showLogin() {
-            document.getElementById("login-container").style.display = "block";
-            document.getElementById("main-content").style.display = "none";
-        }
-
-        auth.onAuthStateChanged((user) => {
-            if (user) {
-                showMainContent();
-            } else {
-                showLogin();
-            }
-        });
-
         function signUp() {
             const email = document.getElementById("email").value;
             const password = document.getElementById("password").value;
             auth.createUserWithEmailAndPassword(email, password)
-                .then(() => {
-                    alert("Sign-up successful!");
-                    showMainContent();
-                })
-                .catch((error) => alert(error.message));
+                .then(() => showMainContent())
+                .catch(error => alert(error.message));
         }
 
         function logIn() {
             const email = document.getElementById("email").value;
             const password = document.getElementById("password").value;
             auth.signInWithEmailAndPassword(email, password)
-                .then(() => {
-                    alert("Log-in successful!");
-                    showMainContent();
-                })
-                .catch((error) => alert(error.message));
+                .then(() => showMainContent())
+                .catch(error => alert(error.message));
         }
 
         function logOut() {
             auth.signOut()
-                .then(() => {
-                    alert("Logged out successfully!");
-                    showLogin();
-                })
-                .catch((error) => alert(error.message));
+                .then(() => showLogin())
+                .catch(error => alert(error.message));
         }
 
         function recordTransaction() {
@@ -270,89 +262,8 @@
                 description,
                 date: new Date().toDateString(),
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            }).then(() => {
-                updateSummaries();
-                displayLog();
-                alert("Transaction recorded!");
-            }).catch((error) => alert("Error recording transaction: " + error.message));
-        }
-
-        function resetLog() {
-            if (confirm("Are you sure you want to reset the log?")) {
-                db.collection("earnings")
-                    .where("userId", "==", auth.currentUser.uid)
-                    .get()
-                    .then((querySnapshot) => {
-                        querySnapshot.forEach((doc) => doc.ref.delete());
-                        updateSummaries();
-                        displayLog();
-                    });
-            }
-        }
-
-        function undoLastTransaction() {
-            db.collection("earnings")
-                .where("userId", "==", auth.currentUser.uid)
-                .orderBy("timestamp", "desc")
-                .limit(1)
-                .get()
-                .then((querySnapshot) => {
-                    if (!querySnapshot.empty) {
-                        querySnapshot.docs[0].ref.delete().then(() => {
-                            updateSummaries();
-                            displayLog();
-                        });
-                    }
-                });
-        }
-
-        function updateSummaries() {
-            db.collection("earnings")
-                .where("userId", "==", auth.currentUser.uid)
-                .get()
-                .then((querySnapshot) => {
-                    let dailyGross = 0, dailyTips = 0, dailyNet = 0;
-                    let grandGross = 0, grandTips = 0, grandNet = 0;
-                    const today = new Date().toDateString();
-
-                    querySnapshot.forEach((doc) => {
-                        const data = doc.data();
-                        grandGross += data.gross;
-                        grandTips += data.tips;
-                        grandNet += data.net;
-                        if (data.date === today) {
-                            dailyGross += data.gross;
-                            dailyTips += data.tips;
-                            dailyNet += data.net;
-                        }
-                    });
-
-                    document.getElementById("dailyGross").innerText = dailyGross.toFixed(2);
-                    document.getElementById("dailyTips").innerText = dailyTips.toFixed(2);
-                    document.getElementById("dailyNet").innerText = dailyNet.toFixed(2);
-                    document.getElementById("grandGross").innerText = grandGross.toFixed(2);
-                    document.getElementById("grandTips").innerText = grandTips.toFixed(2);
-                    document.getElementById("grandNet").innerText = grandNet.toFixed(2);
-                });
-        }
-
-        function displayLog() {
-            db.collection("earnings")
-                .where("userId", "==", auth.currentUser.uid)
-                .get()
-                .then((querySnapshot) => {
-                    const logDisplay = document.getElementById("logDisplay");
-                    logDisplay.innerHTML = querySnapshot.empty
-                        ? "No transactions recorded."
-                        : querySnapshot.docs.map(doc => {
-                            const data = doc.data();
-                            return `<div class="transaction-item">${data.date}: $${data.gross.toFixed(2)} gross, $${data.tips.toFixed(2)} tips, $${data.net.toFixed(2)} net.<br>Description: ${data.description}</div>`;
-                        }).join("");
-                })
-                .catch((error) => {
-                    console.error("Error displaying log:", error.message);
-                    alert("Error displaying log: " + error.message);
-                });
+            }).then(() => updateSummaries())
+              .catch(error => alert(error.message));
         }
 
         function viewSummaryByDateRange() {
@@ -360,31 +271,25 @@
             const endDate = new Date(document.getElementById("endDate").value);
             endDate.setHours(23, 59, 59, 999);
 
-            db.collection("earnings")
-                .where("userId", "==", auth.currentUser.uid)
-                .get()
-                .then((querySnapshot) => {
-                    let rangeGross = 0, rangeTips = 0, rangeNet = 0;
+            db.collection("earnings").where("userId", "==", auth.currentUser.uid).get()
+              .then((querySnapshot) => {
+                  let rangeGross = 0, rangeTips = 0, rangeNet = 0;
 
-                    querySnapshot.forEach((doc) => {
-                        const data = doc.data();
-                        const recordDate = new Date(data.date);
+                  querySnapshot.forEach((doc) => {
+                      const data = doc.data();
+                      const recordDate = new Date(data.date);
 
-                        if (recordDate >= startDate && recordDate <= endDate) {
-                            rangeGross += data.gross;
-                            rangeTips += data.tips;
-                            rangeNet += data.net;
-                        }
-                    });
+                      if (recordDate >= startDate && recordDate <= endDate) {
+                          rangeGross += data.gross;
+                          rangeTips += data.tips;
+                          rangeNet += data.net;
+                      }
+                  });
 
-                    document.getElementById("rangeGross").innerText = rangeGross.toFixed(2);
-                    document.getElementById("rangeTips").innerText = rangeTips.toFixed(2);
-                    document.getElementById("rangeNet").innerText = rangeNet.toFixed(2);
-                })
-                .catch((error) => {
-                    console.error("Error fetching summary:", error.message);
-                    alert("Error fetching summary: " + error.message);
-                });
+                  document.getElementById("rangeGross").innerText = rangeGross.toFixed(2);
+                  document.getElementById("rangeTips").innerText = rangeTips.toFixed(2);
+                  document.getElementById("rangeNet").innerText = rangeNet.toFixed(2);
+              }).catch(error => alert("Error fetching summary: " + error.message));
         }
     </script>
 </body>
