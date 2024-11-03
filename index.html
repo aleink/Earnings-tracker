@@ -231,14 +231,14 @@
         <div class="summary-box">
             <div class="summary-item">
                 <strong>Daily Summary</strong><br>
-                Gross: $<span id="dailyGross">0.00</span>, Cash Tips: $<span id="dailyCashTips">0.00</span>, Card Tips: $<span id="dailyCardTips">0.00</span>, Net: $<span id="dailyNet">0.00</span>
+                Gross: $<span id="dailyGross">0.00</span>, Tips: $<span id="dailyTips">0.00</span>, Net: $<span id="dailyNet">0.00</span>
             </div>
         </div>
 
         <div class="summary-box">
             <div class="summary-item">
                 <strong>Grand Total</strong><br>
-                Gross: $<span id="grandGross">0.00</span>, Cash Tips: $<span id="grandCashTips">0.00</span>, Card Tips: $<span id="grandCardTips">0.00</span>, Net: $<span id="grandNet">0.00</span>
+                Gross: $<span id="grandGross">0.00</span>, Tips: $<span id="grandTips">0.00</span>, Net: $<span id="grandNet">0.00</span>
             </div>
         </div>
 
@@ -252,8 +252,7 @@
             <button class="calculate-button" onclick="updateDateRangeSummary()">Calculate Range</button>
             <div class="range-results" id="dateRangeSummary">
                 <div>Gross: $<span id="rangeGross">0.00</span></div>
-                <div>Cash Tips: $<span id="rangeCashTips">0.00</span></div>
-                <div>Card Tips: $<span id="rangeCardTips">0.00</span></div>
+                <div>Tips: $<span id="rangeTips">0.00</span></div>
                 <div>Net: $<span id="rangeNet">0.00</span></div>
             </div>
         </div>
@@ -274,7 +273,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
     <script>
-        // Firebase configuration and initialization
+// Firebase configuration and initialization
         const firebaseConfig = {
             apiKey: "AIzaSyDwkAyX5RSMXDSe7PHSd7ZwI27Ed5uEhKo",
             authDomain: "club-tattoo-earnings-tracker.firebaseapp.com",
@@ -284,7 +283,7 @@
             appId: "1:411443089106:web:93a23cea86e8d008d7a70b",
             measurementId: "G-6W7SQXCWJC"
         };
-
+        
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
@@ -353,26 +352,27 @@
             const description = document.getElementById("description").value || "No description";
 
             const gross = totalTattooValue;
-            const net = (totalTattooValue * percentageEarned) + cashTip + cardTip;
+            const tips = cashTip + cardTip;
+            const net = (totalTattooValue * percentageEarned) + tips;
 
             const formattedDate = formatDate(new Date());
 
             db.collection("earnings").add({
                 userId: auth.currentUser.uid,
                 gross,
-                cashTip,
-                cardTip,
+                tips,
                 net,
                 description,
                 date: formattedDate,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             }).then(() => {
+                // Clear input fields after successful recording
                 document.getElementById("totalTattooValue").value = "";
                 document.getElementById("percentageEarned").value = "";
                 document.getElementById("cashTip").value = "";
                 document.getElementById("cardTip").value = "";
                 document.getElementById("description").value = "";
-
+                
                 updateSummaries();
                 displayLog();
             }).catch((error) => console.error("Error recording transaction:", error.message));
@@ -425,32 +425,27 @@
                 .where("userId", "==", auth.currentUser.uid)
                 .get()
                 .then((querySnapshot) => {
-                    let dailyGross = 0, dailyCashTips = 0, dailyCardTips = 0, dailyNet = 0;
-                    let grandGross = 0, grandCashTips = 0, grandCardTips = 0, grandNet = 0;
+                    let dailyGross = 0, dailyTips = 0, dailyNet = 0;
+                    let grandGross = 0, grandTips = 0, grandNet = 0;
                     const today = formatDate(new Date());
 
                     querySnapshot.forEach((doc) => {
                         const data = doc.data();
                         grandGross += data.gross;
-                        grandCashTips += data.cashTip;
-                        grandCardTips += data.cardTip;
+                        grandTips += data.tips;
                         grandNet += data.net;
-
                         if (data.date === today) {
                             dailyGross += data.gross;
-                            dailyCashTips += data.cashTip;
-                            dailyCardTips += data.cardTip;
+                            dailyTips += data.tips;
                             dailyNet += data.net;
                         }
                     });
 
                     document.getElementById("dailyGross").innerText = dailyGross.toFixed(2);
-                    document.getElementById("dailyCashTips").innerText = dailyCashTips.toFixed(2);
-                    document.getElementById("dailyCardTips").innerText = dailyCardTips.toFixed(2);
+                    document.getElementById("dailyTips").innerText = dailyTips.toFixed(2);
                     document.getElementById("dailyNet").innerText = dailyNet.toFixed(2);
                     document.getElementById("grandGross").innerText = grandGross.toFixed(2);
-                    document.getElementById("grandCashTips").innerText = grandCashTips.toFixed(2);
-                    document.getElementById("grandCardTips").innerText = grandCardTips.toFixed(2);
+                    document.getElementById("grandTips").innerText = grandTips.toFixed(2);
                     document.getElementById("grandNet").innerText = grandNet.toFixed(2);
                 });
         }
@@ -465,7 +460,7 @@
                         ? "No transactions recorded."
                         : querySnapshot.docs.map(doc => {
                             const data = doc.data();
-                            return `<div class="transaction-item">${data.date}: $${data.gross.toFixed(2)} gross, Cash Tips: $${data.cashTip.toFixed(2)}, Card Tips: $${data.cardTip.toFixed(2)}, Net: $${data.net.toFixed(2)}.<br>Description: ${data.description}</div>`;
+                            return `<div class="transaction-item">${data.date}: $${data.gross.toFixed(2)} gross, $${data.tips.toFixed(2)} tips, $${data.net.toFixed(2)} net.<br>Description: ${data.description}</div>`;
                         }).join("");
                 })
                 .catch((error) => console.error("Error displaying log:", error.message));
@@ -476,10 +471,10 @@
                 .where("userId", "==", auth.currentUser.uid)
                 .get()
                 .then((querySnapshot) => {
-                    let csvContent = "Date,Gross,Cash Tips,Card Tips,Net,Description\n";
+                    let csvContent = "Date,Gross,Tips,Net,Description\n";
                     querySnapshot.forEach((doc) => {
                         const data = doc.data();
-                        csvContent += `${data.date},${data.gross},${data.cashTip},${data.cardTip},${data.net},"${data.description}"\n`;
+                        csvContent += `${data.date},${data.gross},${data.tips},${data.net},"${data.description}"\n`;
                     });
 
                     const blob = new Blob([csvContent], { type: "text/csv" });
@@ -503,6 +498,7 @@
                 return;
             }
 
+            // Adjust the start and end dates by subtracting one day
             const adjustedStartDate = new Date(new Date(startDate).setDate(new Date(startDate).getDate() + 1));
             const adjustedEndDate = new Date(new Date(endDate).setDate(new Date(endDate).getDate() + 1));
 
@@ -513,23 +509,22 @@
                 .where("userId", "==", auth.currentUser.uid)
                 .get()
                 .then((querySnapshot) => {
-                    let rangeGross = 0, rangeCashTips = 0, rangeCardTips = 0, rangeNet = 0;
+                    let rangeGross = 0, rangeTips = 0, rangeNet = 0;
 
                     querySnapshot.forEach((doc) => {
                         const data = doc.data();
                         const transactionDate = data.date;
 
+                        // Check if transaction date falls within the adjusted range
                         if (transactionDate >= start && transactionDate <= end) {
                             rangeGross += data.gross;
-                            rangeCashTips += data.cashTip;
-                            rangeCardTips += data.cardTip;
+                            rangeTips += data.tips;
                             rangeNet += data.net;
                         }
                     });
 
                     document.getElementById("rangeGross").innerText = rangeGross.toFixed(2);
-                    document.getElementById("rangeCashTips").innerText = rangeCashTips.toFixed(2);
-                    document.getElementById("rangeCardTips").innerText = rangeCardTips.toFixed(2);
+                    document.getElementById("rangeTips").innerText = rangeTips.toFixed(2);
                     document.getElementById("rangeNet").innerText = rangeNet.toFixed(2);
                 })
                 .catch((error) => console.error("Error calculating date range summary:", error));
