@@ -1,85 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
+<!-- Previous head content remains the same until the additional styles -->
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Club Tattoo Earnings Tracker</title>
+    <!-- ... (previous head content) ... -->
     <style>
-        /* Base Styles */
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #1e1e2f;
-            color: #f0f0f0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px;
-        }
+        /* ... (previous styles) ... */
 
-        h1, h2, label {
-            color: #ffffff;
-            margin-bottom: 1rem;
-        }
-
-        /* Container Styles */
-        .container, .main-content {
-            width: 100%;
-            max-width: 500px;
-            padding: 20px;
-            background-color: #2e2e3e;
+        /* Date Range Selector Styles */
+        .date-range-container {
+            background-color: #3a3a4f;
+            padding: 15px;
             border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
-            margin: 10px 0;
+            margin-top: 20px;
         }
 
-        .container {
-            text-align: center;
-        }
-
-        /* Input and Button Styles */
-        input[type="text"], input[type="email"], input[type="password"] {
-            width: 100%;
-            padding: 12px;
-            margin: 8px 0;
+        .date-range-container input[type="date"] {
+            width: calc(50% - 10px);
+            padding: 8px;
+            margin: 5px;
             border: none;
             border-radius: 5px;
-            font-size: 1em;
-            color: #333;
             background-color: #f0f0f0;
-            box-sizing: border-box;
         }
 
-        button {
-            width: 100%;
-            padding: 12px;
-            margin: 8px 0;
-            border: none;
-            border-radius: 5px;
-            font-size: 1em;
-            color: #fff;
-            background: linear-gradient(45deg, #3a7bd5, #00d2ff);
-            cursor: pointer;
-            transition: background 0.3s ease;
-        }
-
-        button:hover {
-            background: linear-gradient(45deg, #00d2ff, #3a7bd5);
-        }
-
-        /* Red Button Style for Reset Log */
-        .reset-button {
-            background: linear-gradient(45deg, #d5333a, #ff4d4f);
-        }
-
-        .reset-button:hover {
-            background: linear-gradient(45deg, #ff4d4f, #d5333a);
-        }
-
-        /* Summary and Log Boxes */
-        .summary-box, .transaction-log {
+        .date-range-summary {
             background-color: #3a3a4f;
             padding: 15px;
             border-radius: 10px;
@@ -87,295 +31,104 @@
             color: #d0d0d0;
         }
 
-        .summary-box {
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            font-size: 1.1em;
-            padding: 10px 0;
-        }
-
-        .summary-item {
-            text-align: center;
-            flex: 1;
-        }
-
-        .transaction-log h3 {
-            font-size: 1.2em;
+        .date-range-summary h3 {
             text-align: center;
             margin-bottom: 15px;
-        }
-
-        /* Scrollable Transaction Log */
-        #logDisplay {
-            max-height: 200px;
-            overflow-y: auto;
-        }
-
-        .transaction-item {
-            background-color: #444;
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 8px;
-            font-size: 0.9em;
-        }
-
-        /* Mobile Responsive */
-        @media (max-width: 500px) {
-            h1, h2, label {
-                font-size: 1.5em;
-            }
-
-            button {
-                font-size: 0.9em;
-            }
-
-            .summary-box {
-                font-size: 0.9em;
-            }
         }
     </style>
 </head>
 <body>
-    <!-- Login Container -->
-    <div class="container" id="login-container">
-        <h1>Club Tattoo Earnings Tracker</h1>
-        <input type="email" id="email" placeholder="Email"><br>
-        <input type="password" id="password" placeholder="Password"><br>
-        <button onclick="signUp()">Sign Up</button>
-        <button onclick="logIn()">Log In</button>
-    </div>
+    <!-- ... (previous body content until main-content div) ... -->
 
-    <!-- Main Content (Visible after login) -->
-    <div class="main-content" id="main-content" style="display:none;">
-        <h2>Welcome to your Earnings Tracker!</h2>
+    <!-- Inside main-content div, add this before the transaction log -->
+    <div class="date-range-container">
+        <h3>Date Range Summary</h3>
+        <input type="date" id="startDate">
+        <input type="date" id="endDate">
+        <button onclick="calculateDateRange()">Calculate Range</button>
         
-        <label for="totalTattooValue">Tattoo Cost</label>
-        <input type="text" id="totalTattooValue" placeholder="Total Tattoo Value ($)">
-        
-        <label for="percentageEarned">Percentage Split</label>
-        <input type="text" id="percentageEarned" placeholder="Percentage Earned (%)">
-        
-        <label for="cashTip">Cash Tip</label>
-        <input type="text" id="cashTip" placeholder="Cash Tip ($)">
-        
-        <label for="cardTip">Card Tip</label>
-        <input type="text" id="cardTip" placeholder="Card Tip ($)">
-        
-        <label for="description">Tattoo Description (optional)</label>
-        <input type="text" id="description" placeholder="Description (optional)">
-        
-        <button onclick="recordTransaction()">Record Transaction</button>
-        <button onclick="undoLastTransaction()">Undo Last Transaction</button>
-        <button onclick="logOut()">Log Out</button>
-
-        <!-- Daily and Grand Totals Summary Boxes -->
-        <div class="summary-box">
+        <div class="date-range-summary">
+            <h3>Range Summary</h3>
             <div class="summary-item">
-                <strong>Daily Summary</strong><br>
-                Gross: $<span id="dailyGross">0.00</span>, Tips: $<span id="dailyTips">0.00</span>, Net: $<span id="dailyNet">0.00</span>
+                Gross: $<span id="rangeGross">0.00</span><br>
+                Tips: $<span id="rangeTips">0.00</span><br>
+                Net: $<span id="rangeNet">0.00</span><br>
+                Transactions: <span id="rangeCount">0</span>
             </div>
         </div>
-
-        <div class="summary-box">
-            <div class="summary-item">
-                <strong>Grand Total</strong><br>
-                Gross: $<span id="grandGross">0.00</span>, Tips: $<span id="grandTips">0.00</span>, Net: $<span id="grandNet">0.00</span>
-            </div>
-        </div>
-
-        <!-- Transaction Log -->
-        <div class="transaction-log">
-            <h3>Transaction Log</h3>
-            <div id="logDisplay">No transactions recorded.</div>
-        </div>
-
-        <!-- Reset Log Button moved below the Transaction Log -->
-        <button class="reset-button" onclick="resetLog()">Reset Log</button>
     </div>
 
-    <!-- Firebase setup and JavaScript logic here -->
-    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
+    <!-- ... (rest of the previous body content) ... -->
+
+    <!-- Add this function to your existing JavaScript, before the closing script tag -->
     <script>
-        // Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyDwkAyX5RSMXDSe7PHSd7ZwI27Ed5uEhKo",
-            authDomain: "club-tattoo-earnings-tracker.firebaseapp.com",
-            projectId: "club-tattoo-earnings-tracker",
-            storageBucket: "club-tattoo-earnings-tracker.appspot.com",
-            messagingSenderId: "411443089106",
-            appId: "1:411443089106:web:93a23cea86e8d008d7a70b",
-            measurementId: "G-6W7SQXCWJC"
-        };
+        // ... (previous JavaScript code) ...
 
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
+        function calculateDateRange() {
+            const startDate = new Date(document.getElementById("startDate").value);
+            const endDate = new Date(document.getElementById("endDate").value);
+            
+            // Set endDate to end of day
+            endDate.setHours(23, 59, 59, 999);
 
-        function showMainContent() {
-            document.getElementById("login-container").style.display = "none";
-            document.getElementById("main-content").style.display = "block";
-            updateSummaries();
-            displayLog();
+            // Clear invalid dates
+            if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+                alert("Please select valid start and end dates");
+                return;
+            }
+
+            // Fetch all transactions and filter client-side
+            db.collection("earnings")
+                .where("userId", "==", auth.currentUser.uid)
+                .get()
+                .then((querySnapshot) => {
+                    let rangeGross = 0;
+                    let rangeTips = 0;
+                    let rangeNet = 0;
+                    let transactionCount = 0;
+
+                    querySnapshot.forEach((doc) => {
+                        const data = doc.data();
+                        const transactionDate = data.timestamp?.toDate();
+                        
+                        if (transactionDate && 
+                            transactionDate >= startDate && 
+                            transactionDate <= endDate) {
+                            rangeGross += data.gross;
+                            rangeTips += data.tips;
+                            rangeNet += data.net;
+                            transactionCount++;
+                        }
+                    });
+
+                    // Update the range summary display
+                    document.getElementById("rangeGross").innerText = rangeGross.toFixed(2);
+                    document.getElementById("rangeTips").innerText = rangeTips.toFixed(2);
+                    document.getElementById("rangeNet").innerText = rangeNet.toFixed(2);
+                    document.getElementById("rangeCount").innerText = transactionCount;
+                })
+                .catch((error) => console.error("Error calculating date range:", error));
         }
 
-        function showLogin() {
-            document.getElementById("login-container").style.display = "block";
-            document.getElementById("main-content").style.display = "none";
+        // Initialize date inputs with reasonable defaults
+        function initializeDateInputs() {
+            const today = new Date();
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(today.getDate() - 30);
+
+            document.getElementById("startDate").valueAsDate = thirtyDaysAgo;
+            document.getElementById("endDate").valueAsDate = today;
         }
 
+        // Add this to your existing auth.onAuthStateChanged callback
         auth.onAuthStateChanged((user) => {
             if (user) {
                 showMainContent();
+                initializeDateInputs(); // Initialize date inputs when user logs in
             } else {
                 showLogin();
             }
         });
-
-        function signUp() {
-            const email = document.getElementById("email").value;
-            const password = document.getElementById("password").value;
-            auth.createUserWithEmailAndPassword(email, password)
-                .then((userCredential) => {
-                    showMainContent();
-                })
-                .catch((error) => console.error("Sign-up error:", error.message));
-        }
-
-        function logIn() {
-            const email = document.getElementById("email").value;
-            const password = document.getElementById("password").value;
-            auth.signInWithEmailAndPassword(email, password)
-                .then((userCredential) => {
-                    showMainContent();
-                })
-                .catch((error) => console.error("Log-in error:", error.message));
-        }
-
-        function logOut() {
-            auth.signOut()
-                .then(() => {
-                    showLogin();
-                })
-                .catch((error) => console.error("Log-out error:", error.message));
-        }
-
-        function recordTransaction() {
-            const totalTattooValue = parseFloat(document.getElementById("totalTattooValue").value) || 0;
-            const percentageEarned = (parseFloat(document.getElementById("percentageEarned").value) || 0) / 100;
-            const cashTip = parseFloat(document.getElementById("cashTip").value) || 0;
-            const cardTip = parseFloat(document.getElementById("cardTip").value) || 0;
-            const description = document.getElementById("description").value || "No description";
-
-            const gross = totalTattooValue;
-            const tips = cashTip + cardTip;
-            const net = (totalTattooValue * percentageEarned) + tips;
-
-            db.collection("earnings").add({
-                userId: auth.currentUser.uid,
-                gross,
-                tips,
-                net,
-                description,
-                date: new Date().toDateString(),
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            }).then(() => {
-                updateSummaries();
-                displayLog();
-            }).catch((error) => console.error("Error recording transaction:", error.message));
-        }
-
-        function resetLog() {
-            if (confirm("Are you sure you want to reset the log?")) {
-                db.collection("earnings")
-                    .where("userId", "==", auth.currentUser.uid)
-                    .get()
-                    .then((querySnapshot) => {
-                        querySnapshot.forEach((doc) => doc.ref.delete());
-                        updateSummaries();
-                        displayLog();
-                    });
-            }
-        }
-
-        function undoLastTransaction() {
-            db.collection("earnings")
-                .where("userId", "==", auth.currentUser.uid)
-                .get()
-                .then((querySnapshot) => {
-                    const transactions = querySnapshot.docs.map(doc => ({
-                        id: doc.id,
-                        ...doc.data()
-                    }));
-
-                    if (transactions.length === 0) {
-                        console.log("No transactions found to undo.");
-                        return;
-                    }
-
-                    // Find the transaction with the latest timestamp manually
-                    const latestTransaction = transactions.reduce((latest, current) => {
-                        return new Date(current.timestamp?.toDate()) > new Date(latest.timestamp?.toDate()) ? current : latest;
-                    });
-
-                    db.collection("earnings").doc(latestTransaction.id).delete()
-                        .then(() => {
-                            updateSummaries();
-                            displayLog();
-                        })
-                        .catch((error) => console.error("Error deleting last transaction:", error));
-                })
-                .catch((error) => console.error("Error retrieving transactions:", error));
-        }
-
-        function updateSummaries() {
-            db.collection("earnings")
-                .where("userId", "==", auth.currentUser.uid)
-                .get()
-                .then((querySnapshot) => {
-                    let dailyGross = 0, dailyTips = 0, dailyNet = 0;
-                    let grandGross = 0, grandTips = 0, grandNet = 0;
-                    const today = new Date().toDateString();
-
-                    querySnapshot.forEach((doc) => {
-                        const data = doc.data();
-                        grandGross += data.gross;
-                        grandTips += data.tips;
-                        grandNet += data.net;
-                        if (data.date === today) {
-                            dailyGross += data.gross;
-                            dailyTips += data.tips;
-                            dailyNet += data.net;
-                        }
-                    });
-
-                    document.getElementById("dailyGross").innerText = dailyGross.toFixed(2);
-                    document.getElementById("dailyTips").innerText = dailyTips.toFixed(2);
-                    document.getElementById("dailyNet").innerText = dailyNet.toFixed(2);
-                    document.getElementById("grandGross").innerText = grandGross.toFixed(2);
-                    document.getElementById("grandTips").innerText = grandTips.toFixed(2);
-                    document.getElementById("grandNet").innerText = grandNet.toFixed(2);
-                });
-        }
-
-        function displayLog() {
-            db.collection("earnings")
-                .where("userId", "==", auth.currentUser.uid)
-                .get()
-                .then((querySnapshot) => {
-                    const logDisplay = document.getElementById("logDisplay");
-                    logDisplay.innerHTML = querySnapshot.empty
-                        ? "No transactions recorded."
-                        : querySnapshot.docs.map(doc => {
-                            const data = doc.data();
-                            return `<div class="transaction-item">${data.date}: $${data.gross.toFixed(2)} gross, $${data.tips.toFixed(2)} tips, $${data.net.toFixed(2)} net.<br>Description: ${data.description}</div>`;
-                        }).join("");
-                })
-                .catch((error) => console.error("Error displaying log:", error.message));
-        }
     </script>
 </body>
 </html>
