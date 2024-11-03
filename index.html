@@ -215,6 +215,14 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
+        function formatDate(date) {
+            const d = new Date(date);
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            const year = d.getFullYear();
+            return `${month}/${day}/${year}`;
+        }
+
         function showMainContent() {
             document.getElementById("login-container").style.display = "none";
             document.getElementById("main-content").style.display = "block";
@@ -274,13 +282,15 @@
             const tips = cashTip + cardTip;
             const net = (totalTattooValue * percentageEarned) + tips;
 
+            const formattedDate = formatDate(new Date());
+
             db.collection("earnings").add({
                 userId: auth.currentUser.uid,
                 gross,
                 tips,
                 net,
                 description,
-                date: new Date().toDateString(),
+                date: formattedDate,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             }).then(() => {
                 updateSummaries();
@@ -337,7 +347,7 @@
                 .then((querySnapshot) => {
                     let dailyGross = 0, dailyTips = 0, dailyNet = 0;
                     let grandGross = 0, grandTips = 0, grandNet = 0;
-                    const today = new Date().toDateString();
+                    const today = formatDate(new Date());
 
                     querySnapshot.forEach((doc) => {
                         const data = doc.data();
