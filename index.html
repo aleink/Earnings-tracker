@@ -169,9 +169,6 @@
         <button onclick="undoLastTransaction()">Undo Last Transaction</button>
         <button onclick="logOut()">Log Out</button>
 
-        <!-- Export CSV Button -->
-        <button onclick="exportCSV()">Export CSV</button>
-
         <!-- Daily and Grand Totals Summary Boxes -->
         <div class="summary-box">
             <div class="summary-item">
@@ -193,7 +190,8 @@
             <div id="logDisplay">No transactions recorded.</div>
         </div>
 
-        <!-- Reset Log Button -->
+        <!-- Export Log and Reset Log Buttons -->
+        <button onclick="exportCSV()">Export Log as CSV</button>
         <button class="reset-button" onclick="resetLog()">Reset Log</button>
     </div>
 
