@@ -1,4 +1,4 @@
-\<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -40,7 +40,7 @@
         }
 
         /* Input and Button Styles */
-        input[type="text"], input[type="email"], input[type="password"], input[type="date"] {
+        input[type="text"], input[type="email"], input[type="password"] {
             width: 100%;
             padding: 12px;
             margin: 8px 0;
@@ -169,23 +169,6 @@
         <button onclick="undoLastTransaction()">Undo Last Transaction</button>
         <button onclick="logOut()">Log Out</button>
 
-        <!-- Date Range Summary -->
-        <div class="summary-box">
-            <label for="startDate">Start Date</label>
-            <input type="date" id="startDate">
-            <label for="endDate">End Date</label>
-            <input type="date" id="endDate">
-            <button onclick="calculateDateRangeSummary()">Calculate Range Summary</button>
-        </div>
-
-        <!-- Range Summary Display -->
-        <div class="summary-box" id="rangeSummaryBox" style="display: none;">
-            <div class="summary-item">
-                <strong>Date Range Summary</strong><br>
-                Gross: $<span id="rangeGross">0.00</span>, Tips: $<span id="rangeTips">0.00</span>, Net: $<span id="rangeNet">0.00</span>
-            </div>
-        </div>
-
         <!-- Daily and Grand Totals Summary Boxes -->
         <div class="summary-box">
             <div class="summary-item">
@@ -216,6 +199,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
     <script>
+        // Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyDwkAyX5RSMXDSe7PHSd7ZwI27Ed5uEhKo",
             authDomain: "club-tattoo-earnings-tracker.firebaseapp.com",
@@ -226,15 +210,16 @@
             measurementId: "G-6W7SQXCWJC"
         };
 
+        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
-        let transactionsData = [];
 
         function showMainContent() {
             document.getElementById("login-container").style.display = "none";
             document.getElementById("main-content").style.display = "block";
-            fetchTransactions();
+            updateSummaries();
+            displayLog();
         }
 
         function showLogin() {
@@ -250,35 +235,32 @@
             }
         });
 
-        function fetchTransactions() {
-            db.collection("earnings")
-                .where("userId", "==", auth.currentUser.uid)
-                .get()
-                .then((querySnapshot) => {
-                    transactionsData = querySnapshot.docs.map(doc => doc.data());
-                    updateSummaries();
-                    displayLog();
-                });
+        function signUp() {
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+            auth.createUserWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    showMainContent();
+                })
+                .catch((error) => console.error("Sign-up error:", error.message));
         }
 
-        function calculateDateRangeSummary() {
-            const startDate = new Date(document.getElementById("startDate").value);
-            const endDate = new Date(document.getElementById("endDate").value);
-            let rangeGross = 0, rangeTips = 0, rangeNet = 0;
+        function logIn() {
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+            auth.signInWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    showMainContent();
+                })
+                .catch((error) => console.error("Log-in error:", error.message));
+        }
 
-            transactionsData.forEach(transaction => {
-                const transactionDate = new Date(transaction.date);
-                if (transactionDate >= startDate && transactionDate <= endDate) {
-                    rangeGross += transaction.gross;
-                    rangeTips += transaction.tips;
-                    rangeNet += transaction.net;
-                }
-            });
-
-            document.getElementById("rangeGross").innerText = rangeGross.toFixed(2);
-            document.getElementById("rangeTips").innerText = rangeTips.toFixed(2);
-            document.getElementById("rangeNet").innerText = rangeNet.toFixed(2);
-            document.getElementById("rangeSummaryBox").style.display = "block";
+        function logOut() {
+            auth.signOut()
+                .then(() => {
+                    showLogin();
+                })
+                .catch((error) => console.error("Log-out error:", error.message));
         }
 
         function recordTransaction() {
@@ -306,7 +288,94 @@
             }).catch((error) => console.error("Error recording transaction:", error.message));
         }
 
-        // Other functions like resetLog, undoLastTransaction, updateSummaries, and displayLog
+        function resetLog() {
+            if (confirm("Are you sure you want to reset the log?")) {
+                db.collection("earnings")
+                    .where("userId", "==", auth.currentUser.uid)
+                    .get()
+                    .then((querySnapshot) => {
+                        querySnapshot.forEach((doc) => doc.ref.delete());
+                        updateSummaries();
+                        displayLog();
+                    });
+            }
+        }
+
+        function undoLastTransaction() {
+            db.collection("earnings")
+                .where("userId", "==", auth.currentUser.uid)
+                .get()
+                .then((querySnapshot) => {
+                    const transactions = querySnapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }));
+
+                    if (transactions.length === 0) {
+                        console.log("No transactions found to undo.");
+                        return;
+                    }
+
+                    // Find the transaction with the latest timestamp manually
+                    const latestTransaction = transactions.reduce((latest, current) => {
+                        return new Date(current.timestamp?.toDate()) > new Date(latest.timestamp?.toDate()) ? current : latest;
+                    });
+
+                    db.collection("earnings").doc(latestTransaction.id).delete()
+                        .then(() => {
+                            updateSummaries();
+                            displayLog();
+                        })
+                        .catch((error) => console.error("Error deleting last transaction:", error));
+                })
+                .catch((error) => console.error("Error retrieving transactions:", error));
+        }
+
+        function updateSummaries() {
+            db.collection("earnings")
+                .where("userId", "==", auth.currentUser.uid)
+                .get()
+                .then((querySnapshot) => {
+                    let dailyGross = 0, dailyTips = 0, dailyNet = 0;
+                    let grandGross = 0, grandTips = 0, grandNet = 0;
+                    const today = new Date().toDateString();
+
+                    querySnapshot.forEach((doc) => {
+                        const data = doc.data();
+                        grandGross += data.gross;
+                        grandTips += data.tips;
+                        grandNet += data.net;
+                        if (data.date === today) {
+                            dailyGross += data.gross;
+                            dailyTips += data.tips;
+                            dailyNet += data.net;
+                        }
+                    });
+
+                    document.getElementById("dailyGross").innerText = dailyGross.toFixed(2);
+                    document.getElementById("dailyTips").innerText = dailyTips.toFixed(2);
+                    document.getElementById("dailyNet").innerText = dailyNet.toFixed(2);
+                    document.getElementById("grandGross").innerText = grandGross.toFixed(2);
+                    document.getElementById("grandTips").innerText = grandTips.toFixed(2);
+                    document.getElementById("grandNet").innerText = grandNet.toFixed(2);
+                });
+        }
+
+        function displayLog() {
+            db.collection("earnings")
+                .where("userId", "==", auth.currentUser.uid)
+                .get()
+                .then((querySnapshot) => {
+                    const logDisplay = document.getElementById("logDisplay");
+                    logDisplay.innerHTML = querySnapshot.empty
+                        ? "No transactions recorded."
+                        : querySnapshot.docs.map(doc => {
+                            const data = doc.data();
+                            return `<div class="transaction-item">${data.date}: $${data.gross.toFixed(2)} gross, $${data.tips.toFixed(2)} tips, $${data.net.toFixed(2)} net.<br>Description: ${data.description}</div>`;
+                        }).join("");
+                })
+                .catch((error) => console.error("Error displaying log:", error.message));
+        }
     </script>
 </body>
 </html>
