@@ -19,7 +19,7 @@
             padding: 20px;
         }
 
-        h1, h2 {
+        h1, h2, label {
             color: #ffffff;
             margin-bottom: 1rem;
         }
@@ -116,7 +116,7 @@
 
         /* Mobile Responsive */
         @media (max-width: 500px) {
-            h1, h2 {
+            h1, h2, label {
                 font-size: 1.5em;
             }
 
@@ -143,11 +143,22 @@
     <!-- Main Content (Visible after login) -->
     <div class="main-content" id="main-content" style="display:none;">
         <h2>Welcome to your Earnings Tracker!</h2>
+        
+        <label for="totalTattooValue">Tattoo Cost</label>
         <input type="text" id="totalTattooValue" placeholder="Total Tattoo Value ($)">
+        
+        <label for="percentageEarned">Percentage Split</label>
         <input type="text" id="percentageEarned" placeholder="Percentage Earned (%)">
+        
+        <label for="cashTip">Cash Tip</label>
         <input type="text" id="cashTip" placeholder="Cash Tip ($)">
+        
+        <label for="cardTip">Card Tip</label>
         <input type="text" id="cardTip" placeholder="Card Tip ($)">
+        
+        <label for="description">Tattoo Description (optional)</label>
         <input type="text" id="description" placeholder="Description (optional)">
+        
         <button onclick="recordTransaction()">Record Transaction</button>
         <button onclick="undoLastTransaction()">Undo Last Transaction</button>
         <button onclick="logOut()">Log Out</button>
