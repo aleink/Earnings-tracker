@@ -114,12 +114,6 @@
             font-size: 0.9em;
         }
 
-        /* Scrollable Transaction Log */
-        .transaction-log #logDisplay {
-            max-height: 150px; /* Adjust height as needed */
-            overflow-y: auto;
-        }
-
         /* Mobile Responsive */
         @media (max-width: 500px) {
             h1, h2 {
@@ -179,7 +173,7 @@
             <div id="logDisplay">No transactions recorded.</div>
         </div>
 
-        <!-- Reset Log Button -->
+        <!-- Reset Log Button moved below the Transaction Log -->
         <button class="reset-button" onclick="resetLog()">Reset Log</button>
     </div>
 
@@ -224,10 +218,20 @@
             }
         });
 
+        function signUp() {
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+            auth.createUserWithEmailAndPassword(email, password)
+                .then(showMainContent)
+                .catch(console.error);
+        }
+
         function logIn() {
             const email = document.getElementById("email").value;
             const password = document.getElementById("password").value;
-            auth.signInWithEmailAndPassword(email, password).then(showMainContent).catch(console.error);
+            auth.signInWithEmailAndPassword(email, password)
+                .then(showMainContent)
+                .catch(console.error);
         }
 
         function logOut() {
@@ -320,7 +324,6 @@
             db.collection("earnings")
                 .where("userId", "==", auth.currentUser.uid)
                 .orderBy("timestamp", "desc")
-                .limit(5)  // Display the 5 most recent transactions
                 .get()
                 .then((querySnapshot) => {
                     const logDisplay = document.getElementById("logDisplay");
