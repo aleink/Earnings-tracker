@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Club Tattoo Earnings Tracker</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="manifest" href="/site.webmanifest">
     <style>
         /* Base Styles */
         body {
@@ -19,7 +24,7 @@
             padding: 20px;
         }
 
-        h1, h2, label {
+        h1, h2, h3, label {
             color: #ffffff;
             margin-bottom: 1rem;
         }
@@ -284,7 +289,10 @@
         const db = firebase.firestore();
 
         function formatDate(date) {
+            // Add one day to adjust for timezone offset
             const d = new Date(date);
+            d.setDate(d.getDate() + 1);
+            
             const month = String(d.getMonth() + 1).padStart(2, '0');
             const day = String(d.getDate()).padStart(2, '0');
             const year = d.getFullYear();
@@ -361,6 +369,13 @@
                 date: formattedDate,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             }).then(() => {
+                // Clear input fields after successful recording
+                document.getElementById("totalTattooValue").value = "";
+                document.getElementById("percentageEarned").value = "";
+                document.getElementById("cashTip").value = "";
+                document.getElementById("cardTip").value = "";
+                document.getElementById("description").value = "";
+                
                 updateSummaries();
                 displayLog();
             }).catch((error) => console.error("Error recording transaction:", error.message));
@@ -486,9 +501,12 @@
                 return;
             }
 
-            // Convert selected dates to same format as stored dates for comparison
+            // Convert selected dates and subtract one day to fix date offset
             const start = new Date(startDate);
+            start.setDate(start.getDate() - 1);
             const end = new Date(endDate);
+            end.setDate(end.getDate() - 1);
+            
             const formatStart = formatDate(start);
             const formatEnd = formatDate(end);
 
