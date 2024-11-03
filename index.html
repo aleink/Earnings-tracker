@@ -184,7 +184,7 @@
     <script>
         // Firebase configuration
         const firebaseConfig = {
-            apiKey: "YOUR_API_KEY_HERE",
+            apiKey: "AIzaSyDwkAyX5RSMXDSe7PHSd7ZwI27Ed5uEhKo",
             authDomain: "club-tattoo-earnings-tracker.firebaseapp.com",
             projectId: "club-tattoo-earnings-tracker",
             storageBucket: "club-tattoo-earnings-tracker.appspot.com",
@@ -222,20 +222,28 @@
             const email = document.getElementById("email").value;
             const password = document.getElementById("password").value;
             auth.createUserWithEmailAndPassword(email, password)
-                .then(showMainContent)
-                .catch(console.error);
+                .then((userCredential) => {
+                    showMainContent();
+                })
+                .catch((error) => console.error("Sign-up error:", error.message));
         }
 
         function logIn() {
             const email = document.getElementById("email").value;
             const password = document.getElementById("password").value;
             auth.signInWithEmailAndPassword(email, password)
-                .then(showMainContent)
-                .catch(console.error);
+                .then((userCredential) => {
+                    showMainContent();
+                })
+                .catch((error) => console.error("Log-in error:", error.message));
         }
 
         function logOut() {
-            auth.signOut().then(showLogin).catch(console.error);
+            auth.signOut()
+                .then(() => {
+                    showLogin();
+                })
+                .catch((error) => console.error("Log-out error:", error.message));
         }
 
         function recordTransaction() {
@@ -260,34 +268,50 @@
             }).then(() => {
                 updateSummaries();
                 displayLog();
-            }).catch(console.error);
+            }).catch((error) => console.error("Error recording transaction:", error.message));
         }
 
         function resetLog() {
-            db.collection("earnings")
-                .where("userId", "==", auth.currentUser.uid)
-                .get()
-                .then((querySnapshot) => {
-                    querySnapshot.forEach((doc) => doc.ref.delete());
-                    updateSummaries();
-                    displayLog();
-                }).catch(console.error);
+            if (confirm("Are you sure you want to reset the log?")) {
+                db.collection("earnings")
+                    .where("userId", "==", auth.currentUser.uid)
+                    .get()
+                    .then((querySnapshot) => {
+                        querySnapshot.forEach((doc) => doc.ref.delete());
+                        updateSummaries();
+                        displayLog();
+                    });
+            }
         }
 
         function undoLastTransaction() {
             db.collection("earnings")
                 .where("userId", "==", auth.currentUser.uid)
-                .orderBy("timestamp", "desc")
-                .limit(1)
                 .get()
                 .then((querySnapshot) => {
-                    if (!querySnapshot.empty) {
-                        querySnapshot.docs[0].ref.delete().then(() => {
+                    const transactions = querySnapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }));
+
+                    if (transactions.length === 0) {
+                        console.log("No transactions found to undo.");
+                        return;
+                    }
+
+                    // Find the transaction with the latest timestamp manually
+                    const latestTransaction = transactions.reduce((latest, current) => {
+                        return new Date(current.timestamp?.toDate()) > new Date(latest.timestamp?.toDate()) ? current : latest;
+                    });
+
+                    db.collection("earnings").doc(latestTransaction.id).delete()
+                        .then(() => {
                             updateSummaries();
                             displayLog();
-                        });
-                    }
-                }).catch(console.error);
+                        })
+                        .catch((error) => console.error("Error deleting last transaction:", error));
+                })
+                .catch((error) => console.error("Error retrieving transactions:", error));
         }
 
         function updateSummaries() {
@@ -317,13 +341,12 @@
                     document.getElementById("grandGross").innerText = grandGross.toFixed(2);
                     document.getElementById("grandTips").innerText = grandTips.toFixed(2);
                     document.getElementById("grandNet").innerText = grandNet.toFixed(2);
-                }).catch(console.error);
+                });
         }
 
         function displayLog() {
             db.collection("earnings")
                 .where("userId", "==", auth.currentUser.uid)
-                .orderBy("timestamp", "desc")
                 .get()
                 .then((querySnapshot) => {
                     const logDisplay = document.getElementById("logDisplay");
@@ -333,7 +356,8 @@
                             const data = doc.data();
                             return `<div class="transaction-item">${data.date}: $${data.gross.toFixed(2)} gross, $${data.tips.toFixed(2)} tips, $${data.net.toFixed(2)} net.<br>Description: ${data.description}</div>`;
                         }).join("");
-                }).catch(console.error);
+                })
+                .catch((error) => console.error("Error displaying log:", error.message));
         }
     </script>
 </body>
