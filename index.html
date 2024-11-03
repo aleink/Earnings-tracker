@@ -19,7 +19,7 @@
             padding: 20px;
         }
 
-        h1, h2 {
+        h1, h2, h3 {
             color: #ffffff;
             margin-bottom: 1rem;
         }
@@ -69,15 +69,6 @@
             background: linear-gradient(45deg, #00d2ff, #3a7bd5);
         }
 
-        /* Red Button Style for Reset Log */
-        .reset-button {
-            background: linear-gradient(45deg, #d5333a, #ff4d4f);
-        }
-
-        .reset-button:hover {
-            background: linear-gradient(45deg, #ff4d4f, #d5333a);
-        }
-
         /* Summary and Log Boxes */
         .summary-box, .transaction-log {
             background-color: #3a3a4f;
@@ -116,7 +107,7 @@
 
         /* Mobile Responsive */
         @media (max-width: 500px) {
-            h1, h2 {
+            h1, h2, h3 {
                 font-size: 1.5em;
             }
 
@@ -152,14 +143,6 @@
         <button onclick="undoLastTransaction()">Undo Last Transaction</button>
         <button onclick="logOut()">Log Out</button>
 
-        <!-- Date Range Browser -->
-        <div class="container">
-            <h2>View Summary by Date Range</h2>
-            <input type="date" id="startDate" placeholder="Start Date">
-            <input type="date" id="endDate" placeholder="End Date">
-            <button onclick="viewSummaryByDate()">View Summary</button>
-        </div>
-
         <!-- Daily and Grand Totals Summary Boxes -->
         <div class="summary-box">
             <div class="summary-item">
@@ -175,14 +158,25 @@
             </div>
         </div>
 
+        <!-- Date Range Summary -->
+        <div class="container" id="date-range-summary">
+            <h3>View Summary by Date Range</h3>
+            <input type="date" id="startDate" placeholder="Start Date">
+            <input type="date" id="endDate" placeholder="End Date">
+            <button onclick="viewSummaryByDateRange()">View Summary</button>
+            <div id="dateRangeSummary">
+                Gross: $<span id="rangeGross">0.00</span>, Tips: $<span id="rangeTips">0.00</span>, Net: $<span id="rangeNet">0.00</span>
+            </div>
+        </div>
+
         <!-- Transaction Log -->
         <div class="transaction-log">
             <h3>Transaction Log</h3>
             <div id="logDisplay">No transactions recorded.</div>
         </div>
 
-        <!-- Reset Log Button moved below the Transaction Log -->
-        <button class="reset-button" onclick="resetLog()">Reset Log</button>
+        <!-- Reset Log Button -->
+        <button onclick="resetLog()" style="background: linear-gradient(45deg, #ff4b2b, #ff416c); margin-top: 15px;">Reset Log</button>
     </div>
 
     <!-- Firebase setup and JavaScript logic here -->
@@ -230,7 +224,7 @@
             const email = document.getElementById("email").value;
             const password = document.getElementById("password").value;
             auth.createUserWithEmailAndPassword(email, password)
-                .then((userCredential) => {
+                .then(() => {
                     alert("Sign-up successful!");
                     showMainContent();
                 })
@@ -241,7 +235,7 @@
             const email = document.getElementById("email").value;
             const password = document.getElementById("password").value;
             auth.signInWithEmailAndPassword(email, password)
-                .then((userCredential) => {
+                .then(() => {
                     alert("Log-in successful!");
                     showMainContent();
                 })
@@ -274,7 +268,7 @@
                 tips,
                 net,
                 description,
-                date: new Date().toISOString().split('T')[0],
+                date: new Date().toDateString(),
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             }).then(() => {
                 updateSummaries();
@@ -319,7 +313,7 @@
                 .then((querySnapshot) => {
                     let dailyGross = 0, dailyTips = 0, dailyNet = 0;
                     let grandGross = 0, grandTips = 0, grandNet = 0;
-                    const today = new Date().toISOString().split('T')[0];
+                    const today = new Date().toDateString();
 
                     querySnapshot.forEach((doc) => {
                         const data = doc.data();
@@ -361,31 +355,31 @@
                 });
         }
 
-        function viewSummaryByDate() {
-            const startDate = document.getElementById("startDate").value;
-            const endDate = document.getElementById("endDate").value || startDate; // If endDate is not set, use startDate
-
-            if (!startDate) {
-                alert("Please select a start date.");
-                return;
-            }
+        function viewSummaryByDateRange() {
+            const startDate = new Date(document.getElementById("startDate").value);
+            const endDate = new Date(document.getElementById("endDate").value);
+            endDate.setHours(23, 59, 59, 999);
 
             db.collection("earnings")
                 .where("userId", "==", auth.currentUser.uid)
-                .where("date", ">=", startDate)
-                .where("date", "<=", endDate)
                 .get()
                 .then((querySnapshot) => {
                     let rangeGross = 0, rangeTips = 0, rangeNet = 0;
 
                     querySnapshot.forEach((doc) => {
                         const data = doc.data();
-                        rangeGross += data.gross;
-                        rangeTips += data.tips;
-                        rangeNet += data.net;
+                        const recordDate = new Date(data.date);
+
+                        if (recordDate >= startDate && recordDate <= endDate) {
+                            rangeGross += data.gross;
+                            rangeTips += data.tips;
+                            rangeNet += data.net;
+                        }
                     });
 
-                    alert(`Summary from ${startDate} to ${endDate}:\nGross: $${rangeGross.toFixed(2)}, Tips: $${rangeTips.toFixed(2)}, Net: $${rangeNet.toFixed(2)}`);
+                    document.getElementById("rangeGross").innerText = rangeGross.toFixed(2);
+                    document.getElementById("rangeTips").innerText = rangeTips.toFixed(2);
+                    document.getElementById("rangeNet").innerText = rangeNet.toFixed(2);
                 })
                 .catch((error) => {
                     console.error("Error fetching summary:", error.message);
