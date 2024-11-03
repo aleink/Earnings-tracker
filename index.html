@@ -19,7 +19,7 @@
             padding: 20px;
         }
 
-        h1, h2, h3 {
+        h1, h2 {
             color: #ffffff;
             margin-bottom: 1rem;
         }
@@ -40,7 +40,7 @@
         }
 
         /* Input and Button Styles */
-        input[type="text"], input[type="email"], input[type="password"], input[type="date"] {
+        input[type="text"], input[type="email"], input[type="password"] {
             width: 100%;
             padding: 12px;
             margin: 8px 0;
@@ -67,6 +67,15 @@
 
         button:hover {
             background: linear-gradient(45deg, #00d2ff, #3a7bd5);
+        }
+
+        /* Red Button Style for Reset Log */
+        .reset-button {
+            background: linear-gradient(45deg, #d5333a, #ff4d4f);
+        }
+
+        .reset-button:hover {
+            background: linear-gradient(45deg, #ff4d4f, #d5333a);
         }
 
         /* Summary and Log Boxes */
@@ -107,7 +116,7 @@
 
         /* Mobile Responsive */
         @media (max-width: 500px) {
-            h1, h2, h3 {
+            h1, h2 {
                 font-size: 1.5em;
             }
 
@@ -158,25 +167,14 @@
             </div>
         </div>
 
-        <!-- Date Range Summary -->
-        <div class="container" id="date-range-summary">
-            <h3>View Summary by Date Range</h3>
-            <input type="date" id="startDate" placeholder="Start Date">
-            <input type="date" id="endDate" placeholder="End Date">
-            <button onclick="viewSummaryByDateRange()">View Summary</button>
-            <div id="dateRangeSummary">
-                Gross: $<span id="rangeGross">0.00</span>, Tips: $<span id="rangeTips">0.00</span>, Net: $<span id="rangeNet">0.00</span>
-            </div>
-        </div>
-
         <!-- Transaction Log -->
         <div class="transaction-log">
             <h3>Transaction Log</h3>
             <div id="logDisplay">No transactions recorded.</div>
         </div>
 
-        <!-- Reset Log Button -->
-        <button onclick="resetLog()" style="background: linear-gradient(45deg, #ff4b2b, #ff416c); margin-top: 15px;">Reset Log</button>
+        <!-- Reset Log Button moved below the Transaction Log -->
+        <button class="reset-button" onclick="resetLog()">Reset Log</button>
     </div>
 
     <!-- Firebase setup and JavaScript logic here -->
@@ -224,22 +222,31 @@
             const email = document.getElementById("email").value;
             const password = document.getElementById("password").value;
             auth.createUserWithEmailAndPassword(email, password)
-                .then(() => showMainContent())
-                .catch((error) => console.error(error.message));
+                .then((userCredential) => {
+                    alert("Sign-up successful!");
+                    showMainContent();
+                })
+                .catch((error) => alert(error.message));
         }
 
         function logIn() {
             const email = document.getElementById("email").value;
             const password = document.getElementById("password").value;
             auth.signInWithEmailAndPassword(email, password)
-                .then(() => showMainContent())
-                .catch((error) => console.error(error.message));
+                .then((userCredential) => {
+                    alert("Log-in successful!");
+                    showMainContent();
+                })
+                .catch((error) => alert(error.message));
         }
 
         function logOut() {
             auth.signOut()
-                .then(() => showLogin())
-                .catch((error) => console.error(error.message));
+                .then(() => {
+                    alert("Logged out successfully!");
+                    showLogin();
+                })
+                .catch((error) => alert(error.message));
         }
 
         function recordTransaction() {
@@ -261,8 +268,11 @@
                 description,
                 date: new Date().toDateString(),
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            }).then(() => updateSummaries())
-              .catch((error) => console.error("Error recording transaction: " + error.message));
+            }).then(() => {
+                updateSummaries();
+                displayLog();
+                alert("Transaction recorded!");
+            }).catch((error) => alert("Error recording transaction: " + error.message));
         }
 
         function resetLog() {
@@ -340,38 +350,6 @@
                 .catch((error) => {
                     console.error("Error displaying log:", error.message);
                     alert("Error displaying log: " + error.message);
-                });
-        }
-
-        function viewSummaryByDateRange() {
-            const startDate = new Date(document.getElementById("startDate").value);
-            const endDate = new Date(document.getElementById("endDate").value);
-            endDate.setHours(23, 59, 59, 999);
-
-            db.collection("earnings")
-                .where("userId", "==", auth.currentUser.uid)
-                .get()
-                .then((querySnapshot) => {
-                    let rangeGross = 0, rangeTips = 0, rangeNet = 0;
-
-                    querySnapshot.forEach((doc) => {
-                        const data = doc.data();
-                        const recordDate = new Date(data.date);
-
-                        if (recordDate >= startDate && recordDate <= endDate) {
-                            rangeGross += data.gross;
-                            rangeTips += data.tips;
-                            rangeNet += data.net;
-                        }
-                    });
-
-                    document.getElementById("rangeGross").innerText = rangeGross.toFixed(2);
-                    document.getElementById("rangeTips").innerText = rangeTips.toFixed(2);
-                    document.getElementById("rangeNet").innerText = rangeNet.toFixed(2);
-                })
-                .catch((error) => {
-                    console.error("Error fetching summary:", error.message);
-                    alert("Error fetching summary: " + error.message);
                 });
         }
     </script>
