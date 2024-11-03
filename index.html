@@ -498,9 +498,12 @@
                 return;
             }
 
-            // Convert selected dates
-            const start = formatDate(new Date(startDate));
-            const end = formatDate(new Date(endDate));
+            // Adjust the start and end dates by subtracting one day
+            const adjustedStartDate = new Date(new Date(startDate).setDate(new Date(startDate).getDate() - 1));
+            const adjustedEndDate = new Date(new Date(endDate).setDate(new Date(endDate).getDate() - 1));
+
+            const start = formatDate(adjustedStartDate);
+            const end = formatDate(adjustedEndDate);
 
             db.collection("earnings")
                 .where("userId", "==", auth.currentUser.uid)
@@ -512,7 +515,7 @@
                         const data = doc.data();
                         const transactionDate = data.date;
 
-                        // Check if transaction date falls within selected range
+                        // Check if transaction date falls within the adjusted range
                         if (transactionDate >= start && transactionDate <= end) {
                             rangeGross += data.gross;
                             rangeTips += data.tips;
