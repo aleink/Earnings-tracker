@@ -19,7 +19,7 @@
             padding: 20px;
         }
 
-        h1, h2, label {
+        h1, h2, h3, label {
             color: #ffffff;
             margin-bottom: 1rem;
         }
@@ -40,7 +40,7 @@
         }
 
         /* Input and Button Styles */
-        input[type="text"], input[type="email"], input[type="password"] {
+        input[type="text"], input[type="email"], input[type="password"], input[type="date"] {
             width: 100%;
             padding: 12px;
             margin: 8px 0;
@@ -104,6 +104,27 @@
             font-size: 1.2em;
             text-align: center;
             margin-bottom: 15px;
+        }
+
+        /* Date Range Styles */
+        .date-range-container {
+            background-color: #3a3a4f;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .date-range-container input[type="date"] {
+            width: calc(50% - 10px);
+            margin: 8px 5px;
+        }
+
+        .date-range-summary {
+            background-color: #3a3a4f;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
         }
 
         /* Scrollable Transaction Log */
@@ -184,6 +205,21 @@
             </div>
         </div>
 
+        <!-- Date Range Section -->
+        <div class="date-range-container">
+            <h3>Date Range Summary</h3>
+            <input type="date" id="startDate" onchange="updateDateRangeSummary()">
+            <input type="date" id="endDate" onchange="updateDateRangeSummary()">
+            <div class="date-range-summary" id="dateRangeSummary">
+                <div class="summary-item">
+                    <strong>Range Summary</strong><br>
+                    Gross: $<span id="rangeGross">0.00</span><br>
+                    Tips: $<span id="rangeTips">0.00</span><br>
+                    Net: $<span id="rangeNet">0.00</span>
+                </div>
+            </div>
+        </div>
+
         <!-- Transaction Log -->
         <div class="transaction-log">
             <h3>Transaction Log</h3>
@@ -195,7 +231,7 @@
         <button class="reset-button" onclick="resetLog()">Reset Log</button>
     </div>
 
-    <!-- Firebase setup and JavaScript logic here -->
+    <!-- Firebase setup and JavaScript logic -->
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
@@ -295,6 +331,7 @@
             }).then(() => {
                 updateSummaries();
                 displayLog();
+                updateDateRangeSummary(); // Update date range if dates are selected
             }).catch((error) => console.error("Error recording transaction:", error.message));
         }
 
@@ -307,6 +344,7 @@
                         querySnapshot.forEach((doc) => doc.ref.delete());
                         updateSummaries();
                         displayLog();
+                        updateDateRangeSummary(); // Update date range if dates are selected
                     });
             }
         }
@@ -334,6 +372,7 @@
                         .then(() => {
                             updateSummaries();
                             displayLog();
+                            updateDateRangeSummary(); // Update date range if dates are selected
                         })
                         .catch((error) => console.error("Error deleting last transaction:", error));
                 })
@@ -406,6 +445,49 @@
                     URL.revokeObjectURL(url);
                 })
                 .catch((error) => console.error("Error exporting CSV:", error));
+        }
+
+        function updateDateRangeSummary() {
+            const startDate = document.getElementById("startDate").value;
+            const endDate = document.getElementById("endDate").value;
+            const summaryDiv = document.getElementById("dateRangeSummary");
+
+            if (!startDate || !endDate) {
+                summaryDiv.style.display = "none";
+                return;
+            }
+
+            // Convert selected dates to same format as stored dates for comparison
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            const formatStart = formatDate(start);
+            const formatEnd = formatDate(end);
+
+            db.collection("earnings")
+                .where("userId", "==", auth.currentUser.uid)
+                .get()
+                .then((querySnapshot) => {
+                    let rangeGross = 0, rangeTips = 0, rangeNet = 0;
+
+                    querySnapshot.forEach((doc) => {
+                        const data = doc.data();
+                        const transactionDate = new Date(data.date);
+                        const formattedTransDate = formatDate(transactionDate);
+
+                        // Check if transaction date falls within selected range
+                        if (formattedTransDate >= formatStart && formattedTransDate <= formatEnd) {
+                            rangeGross += data.gross;
+                            rangeTips += data.tips;
+                            rangeNet += data.net;
+                        }
+                    });
+
+                    document.getElementById("rangeGross").innerText = rangeGross.toFixed(2);
+                    document.getElementById("rangeTips").innerText = rangeTips.toFixed(2);
+                    document.getElementById("rangeNet").innerText = rangeNet.toFixed(2);
+                    summaryDiv.style.display = "block";
+                })
+                .catch((error) => console.error("Error calculating date range summary:", error));
         }
     </script>
 </body>
