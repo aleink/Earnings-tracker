@@ -289,7 +289,11 @@
         const db = firebase.firestore();
 
         function formatDate(date) {
-            return new Date(date).toISOString().split('T')[0];
+            const d = new Date(date);
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            const year = d.getFullYear();
+            return `${month}/${day}/${year}`;
         }
 
         function showMainContent() {
@@ -487,11 +491,16 @@
         function updateDateRangeSummary() {
             const startDate = document.getElementById("startDate").value;
             const endDate = document.getElementById("endDate").value;
+            const summaryDiv = document.getElementById("dateRangeSummary");
 
             if (!startDate || !endDate) {
                 alert("Please select both start and end dates");
                 return;
             }
+
+            // Convert selected dates
+            const start = formatDate(new Date(startDate));
+            const end = formatDate(new Date(endDate));
 
             db.collection("earnings")
                 .where("userId", "==", auth.currentUser.uid)
@@ -504,7 +513,7 @@
                         const transactionDate = data.date;
 
                         // Check if transaction date falls within selected range
-                        if (transactionDate >= startDate && transactionDate <= endDate) {
+                        if (transactionDate >= start && transactionDate <= end) {
                             rangeGross += data.gross;
                             rangeTips += data.tips;
                             rangeNet += data.net;
