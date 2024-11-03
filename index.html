@@ -288,21 +288,25 @@
             }
         }
 
-        function undoLastTransaction() {
-            db.collection("earnings")
-                .where("userId", "==", auth.currentUser.uid)
-                .orderBy("timestamp", "desc")
-                .limit(1)
-                .get()
-                .then((querySnapshot) => {
-                    if (!querySnapshot.empty) {
-                        querySnapshot.docs[0].ref.delete().then(() => {
-                            updateSummaries();
-                            displayLog();
-                        });
-                    }
-                });
-        }
+    
+    function undoLastTransaction() {
+        db.collection("earnings")
+            .where("userId", "==", auth.currentUser.uid)
+            .orderBy("timestamp", "desc")
+            .limit(1)
+            .get()
+            .then((querySnapshot) => {
+                if (!querySnapshot.empty) {
+                    querySnapshot.docs[0].ref.delete().then(() => {
+                        updateSummaries();
+                        displayLog();
+                        console.log("Last transaction undone.");
+                    }).catch((error) => console.error("Error deleting last transaction: ", error));
+                } else {
+                    console.log("No transactions to undo.");
+                }
+            }).catch((error) => console.error("Error retrieving last transaction: ", error));
+    }
 
         function updateSummaries() {
             db.collection("earnings")
