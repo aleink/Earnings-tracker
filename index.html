@@ -273,7 +273,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
     <script>
-        // Firebase configuration and initialization
+// Firebase configuration and initialization
         const firebaseConfig = {
             apiKey: "AIzaSyDwkAyX5RSMXDSe7PHSd7ZwI27Ed5uEhKo",
             authDomain: "club-tattoo-earnings-tracker.firebaseapp.com",
@@ -289,9 +289,9 @@
         const db = firebase.firestore();
 
         function formatDate(date) {
-            // Add one day to adjust for timezone offset
+            // Subtract one day to adjust for timezone offset
             const d = new Date(date);
-            d.setDate(d.getDate() + 1);
+            d.setDate(d.getDate() - 1);
             
             const month = String(d.getMonth() + 1).padStart(2, '0');
             const day = String(d.getDate()).padStart(2, '0');
@@ -501,11 +501,9 @@
                 return;
             }
 
-            // Convert selected dates and subtract one day to fix date offset
+            // Convert selected dates
             const start = new Date(startDate);
-            start.setDate(start.getDate() - 1);
             const end = new Date(endDate);
-            end.setDate(end.getDate() - 1);
             
             const formatStart = formatDate(start);
             const formatEnd = formatDate(end);
