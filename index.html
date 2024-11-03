@@ -69,6 +69,15 @@
             background: linear-gradient(45deg, #00d2ff, #3a7bd5);
         }
 
+        /* Red Button Style for Reset Log */
+        .reset-button {
+            background: linear-gradient(45deg, #d5333a, #ff4d4f);
+        }
+
+        .reset-button:hover {
+            background: linear-gradient(45deg, #ff4d4f, #d5333a);
+        }
+
         /* Summary and Log Boxes */
         .summary-box, .transaction-log {
             background-color: #3a3a4f;
@@ -140,7 +149,6 @@
         <input type="text" id="cardTip" placeholder="Card Tip ($)">
         <input type="text" id="description" placeholder="Description (optional)">
         <button onclick="recordTransaction()">Record Transaction</button>
-        <button onclick="resetLog()">Reset Log</button>
         <button onclick="undoLastTransaction()">Undo Last Transaction</button>
         <button onclick="logOut()">Log Out</button>
 
@@ -164,6 +172,9 @@
             <h3>Transaction Log</h3>
             <div id="logDisplay">No transactions recorded.</div>
         </div>
+
+        <!-- Reset Log Button moved below the Transaction Log -->
+        <button class="reset-button" onclick="resetLog()">Reset Log</button>
     </div>
 
     <!-- Firebase setup and JavaScript logic here -->
@@ -324,22 +335,22 @@
         }
 
         function displayLog() {
-    db.collection("earnings")
-        .where("userId", "==", auth.currentUser.uid)
-        .get()  // Removed the orderBy("timestamp", "desc") for simplicity
-        .then((querySnapshot) => {
-            const logDisplay = document.getElementById("logDisplay");
-            logDisplay.innerHTML = querySnapshot.empty
-                ? "No transactions recorded."
-                : querySnapshot.docs.map(doc => {
-                    const data = doc.data();
-                    return `<div class="transaction-item">${data.date}: $${data.gross.toFixed(2)} gross, $${data.tips.toFixed(2)} tips, $${data.net.toFixed(2)} net.<br>Description: ${data.description}</div>`;
-                }).join("");
-        })
-        .catch((error) => {
-            console.error("Error displaying log:", error.message);
-            alert("Error displaying log: " + error.message);
-        });
+            db.collection("earnings")
+                .where("userId", "==", auth.currentUser.uid)
+                .get()
+                .then((querySnapshot) => {
+                    const logDisplay = document.getElementById("logDisplay");
+                    logDisplay.innerHTML = querySnapshot.empty
+                        ? "No transactions recorded."
+                        : querySnapshot.docs.map(doc => {
+                            const data = doc.data();
+                            return `<div class="transaction-item">${data.date}: $${data.gross.toFixed(2)} gross, $${data.tips.toFixed(2)} tips, $${data.net.toFixed(2)} net.<br>Description: ${data.description}</div>`;
+                        }).join("");
+                })
+                .catch((error) => {
+                    console.error("Error displaying log:", error.message);
+                    alert("Error displaying log: " + error.message);
+                });
         }
     </script>
 </body>
