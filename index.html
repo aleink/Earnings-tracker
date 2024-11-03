@@ -40,7 +40,7 @@
         }
 
         /* Input and Button Styles */
-        input[type="text"], input[type="email"], input[type="password"] {
+        input[type="text"], input[type="email"], input[type="password"], input[type="date"] {
             width: 100%;
             padding: 12px;
             margin: 8px 0;
@@ -151,6 +151,14 @@
         <button onclick="recordTransaction()">Record Transaction</button>
         <button onclick="undoLastTransaction()">Undo Last Transaction</button>
         <button onclick="logOut()">Log Out</button>
+
+        <!-- Date Range Browser -->
+        <div class="container">
+            <h2>View Summary by Date Range</h2>
+            <input type="date" id="startDate" placeholder="Start Date">
+            <input type="date" id="endDate" placeholder="End Date">
+            <button onclick="viewSummaryByDate()">View Summary</button>
+        </div>
 
         <!-- Daily and Grand Totals Summary Boxes -->
         <div class="summary-box">
@@ -266,7 +274,7 @@
                 tips,
                 net,
                 description,
-                date: new Date().toDateString(),
+                date: new Date().toISOString().split('T')[0],
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             }).then(() => {
                 updateSummaries();
@@ -311,7 +319,7 @@
                 .then((querySnapshot) => {
                     let dailyGross = 0, dailyTips = 0, dailyNet = 0;
                     let grandGross = 0, grandTips = 0, grandNet = 0;
-                    const today = new Date().toDateString();
+                    const today = new Date().toISOString().split('T')[0];
 
                     querySnapshot.forEach((doc) => {
                         const data = doc.data();
@@ -350,6 +358,38 @@
                 .catch((error) => {
                     console.error("Error displaying log:", error.message);
                     alert("Error displaying log: " + error.message);
+                });
+        }
+
+        function viewSummaryByDate() {
+            const startDate = document.getElementById("startDate").value;
+            const endDate = document.getElementById("endDate").value || startDate; // If endDate is not set, use startDate
+
+            if (!startDate) {
+                alert("Please select a start date.");
+                return;
+            }
+
+            db.collection("earnings")
+                .where("userId", "==", auth.currentUser.uid)
+                .where("date", ">=", startDate)
+                .where("date", "<=", endDate)
+                .get()
+                .then((querySnapshot) => {
+                    let rangeGross = 0, rangeTips = 0, rangeNet = 0;
+
+                    querySnapshot.forEach((doc) => {
+                        const data = doc.data();
+                        rangeGross += data.gross;
+                        rangeTips += data.tips;
+                        rangeNet += data.net;
+                    });
+
+                    alert(`Summary from ${startDate} to ${endDate}:\nGross: $${rangeGross.toFixed(2)}, Tips: $${rangeTips.toFixed(2)}, Net: $${rangeNet.toFixed(2)}`);
+                })
+                .catch((error) => {
+                    console.error("Error fetching summary:", error.message);
+                    alert("Error fetching summary: " + error.message);
                 });
         }
     </script>
