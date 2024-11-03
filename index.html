@@ -499,8 +499,8 @@
             }
 
             // Adjust the start and end dates by subtracting one day
-            const adjustedStartDate = new Date(new Date(startDate).setDate(new Date(startDate).getDate() - 1));
-            const adjustedEndDate = new Date(new Date(endDate).setDate(new Date(endDate).getDate() - 1));
+            const adjustedStartDate = new Date(new Date(startDate).setDate(new Date(startDate).getDate() + 1));
+            const adjustedEndDate = new Date(new Date(endDate).setDate(new Date(endDate).getDate() + 1));
 
             const start = formatDate(adjustedStartDate);
             const end = formatDate(adjustedEndDate);
