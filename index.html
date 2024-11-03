@@ -324,19 +324,22 @@
         }
 
         function displayLog() {
-            db.collection("earnings")
-                .where("userId", "==", auth.currentUser.uid)
-                .orderBy("timestamp", "desc")
-                .get()
-                .then((querySnapshot) => {
-                    const logDisplay = document.getElementById("logDisplay");
-                    logDisplay.innerHTML = querySnapshot.empty
-                        ? "No transactions recorded."
-                        : querySnapshot.docs.map(doc => {
-                            const data = doc.data();
-                            return `<div class="transaction-item">${data.date}: $${data.gross.toFixed(2)} gross, $${data.tips.toFixed(2)} tips, $${data.net.toFixed(2)} net.<br>Description: ${data.description}</div>`;
-                        }).join("");
-                });
+    db.collection("earnings")
+        .where("userId", "==", auth.currentUser.uid)
+        .get()  // Removed the orderBy("timestamp", "desc") for simplicity
+        .then((querySnapshot) => {
+            const logDisplay = document.getElementById("logDisplay");
+            logDisplay.innerHTML = querySnapshot.empty
+                ? "No transactions recorded."
+                : querySnapshot.docs.map(doc => {
+                    const data = doc.data();
+                    return `<div class="transaction-item">${data.date}: $${data.gross.toFixed(2)} gross, $${data.tips.toFixed(2)} tips, $${data.net.toFixed(2)} net.<br>Description: ${data.description}</div>`;
+                }).join("");
+        })
+        .catch((error) => {
+            console.error("Error displaying log:", error.message);
+            alert("Error displaying log: " + error.message);
+        });
         }
     </script>
 </body>
