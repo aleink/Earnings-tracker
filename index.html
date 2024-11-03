@@ -40,7 +40,7 @@
         }
 
         /* Input and Button Styles */
-        input[type="text"], input[type="email"], input[type="password"], input[type="date"] {
+        input[type="text"], input[type="email"], input[type="password"] {
             width: 100%;
             padding: 12px;
             margin: 8px 0;
@@ -108,23 +108,55 @@
 
         /* Date Range Styles */
         .date-range-container {
-            background-color: #3a3a4f;
-            padding: 15px;
+            background-color: #2e2e3e;
+            padding: 20px;
             border-radius: 10px;
             margin-top: 20px;
+            text-align: center;
+        }
+
+        .date-range-container h3 {
+            color: #ffffff;
+            font-size: 1.5em;
+            margin-bottom: 20px;
+        }
+
+        .date-inputs {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
         }
 
         .date-range-container input[type="date"] {
-            width: calc(50% - 10px);
-            margin: 8px 5px;
-        }
-
-        .date-range-summary {
-            background-color: #3a3a4f;
+            flex: 1;
             padding: 15px;
             border-radius: 10px;
-            margin-top: 20px;
-            display: none;
+            border: none;
+            font-size: 1em;
+            background-color: #ffffff;
+        }
+
+        .calculate-button {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.2em;
+            color: #fff;
+            background: linear-gradient(45deg, #3a7bd5, #00d2ff);
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+
+        .calculate-button:hover {
+            background: linear-gradient(45deg, #00d2ff, #3a7bd5);
+        }
+
+        .range-results {
+            text-align: center;
+            font-size: 1.3em;
+            line-height: 1.6;
+            color: #ffffff;
         }
 
         /* Scrollable Transaction Log */
@@ -204,19 +236,18 @@
                 Gross: $<span id="grandGross">0.00</span>, Tips: $<span id="grandTips">0.00</span>, Net: $<span id="grandNet">0.00</span>
             </div>
         </div>
-
         <!-- Date Range Section -->
         <div class="date-range-container">
             <h3>Date Range Summary</h3>
-            <input type="date" id="startDate" onchange="updateDateRangeSummary()">
-            <input type="date" id="endDate" onchange="updateDateRangeSummary()">
-            <div class="date-range-summary" id="dateRangeSummary">
-                <div class="summary-item">
-                    <strong>Range Summary</strong><br>
-                    Gross: $<span id="rangeGross">0.00</span><br>
-                    Tips: $<span id="rangeTips">0.00</span><br>
-                    Net: $<span id="rangeNet">0.00</span>
-                </div>
+            <div class="date-inputs">
+                <input type="date" id="startDate">
+                <input type="date" id="endDate">
+            </div>
+            <button class="calculate-button" onclick="updateDateRangeSummary()">Calculate Range</button>
+            <div class="range-results" id="dateRangeSummary">
+                <div>Gross: $<span id="rangeGross">0.00</span></div>
+                <div>Tips: $<span id="rangeTips">0.00</span></div>
+                <div>Net: $<span id="rangeNet">0.00</span></div>
             </div>
         </div>
 
@@ -329,9 +360,15 @@
                 date: formattedDate,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             }).then(() => {
+                // Clear input fields after successful recording
+                document.getElementById("totalTattooValue").value = "";
+                document.getElementById("percentageEarned").value = "";
+                document.getElementById("cashTip").value = "";
+                document.getElementById("cardTip").value = "";
+                document.getElementById("description").value = "";
+                
                 updateSummaries();
                 displayLog();
-                updateDateRangeSummary(); // Update date range if dates are selected
             }).catch((error) => console.error("Error recording transaction:", error.message));
         }
 
@@ -344,7 +381,7 @@
                         querySnapshot.forEach((doc) => doc.ref.delete());
                         updateSummaries();
                         displayLog();
-                        updateDateRangeSummary(); // Update date range if dates are selected
+                        document.getElementById("dateRangeSummary").style.display = "none";
                     });
             }
         }
@@ -352,29 +389,17 @@
         function undoLastTransaction() {
             db.collection("earnings")
                 .where("userId", "==", auth.currentUser.uid)
+                .orderBy("timestamp", "desc")
+                .limit(1)
                 .get()
                 .then((querySnapshot) => {
-                    const transactions = querySnapshot.docs.map(doc => ({
-                        id: doc.id,
-                        ...doc.data()
-                    }));
-
-                    if (transactions.length === 0) {
-                        console.log("No transactions found to undo.");
-                        return;
+                    if (!querySnapshot.empty) {
+                        querySnapshot.docs[0].ref.delete()
+                            .then(() => {
+                                updateSummaries();
+                                displayLog();
+                            });
                     }
-
-                    const latestTransaction = transactions.reduce((latest, current) => {
-                        return new Date(current.timestamp?.toDate()) > new Date(latest.timestamp?.toDate()) ? current : latest;
-                    });
-
-                    db.collection("earnings").doc(latestTransaction.id).delete()
-                        .then(() => {
-                            updateSummaries();
-                            displayLog();
-                            updateDateRangeSummary(); // Update date range if dates are selected
-                        })
-                        .catch((error) => console.error("Error deleting last transaction:", error));
                 })
                 .catch((error) => console.error("Error retrieving transactions:", error));
         }
@@ -412,6 +437,7 @@
         function displayLog() {
             db.collection("earnings")
                 .where("userId", "==", auth.currentUser.uid)
+                .orderBy("timestamp", "desc")  // Order by timestamp in descending order
                 .get()
                 .then((querySnapshot) => {
                     const logDisplay = document.getElementById("logDisplay");
@@ -428,6 +454,7 @@
         function exportCSV() {
             db.collection("earnings")
                 .where("userId", "==", auth.currentUser.uid)
+                .orderBy("timestamp", "desc")
                 .get()
                 .then((querySnapshot) => {
                     let csvContent = "Date,Gross,Tips,Net,Description\n";
@@ -453,7 +480,7 @@
             const summaryDiv = document.getElementById("dateRangeSummary");
 
             if (!startDate || !endDate) {
-                summaryDiv.style.display = "none";
+                alert("Please select both start and end dates");
                 return;
             }
 
@@ -471,11 +498,10 @@
 
                     querySnapshot.forEach((doc) => {
                         const data = doc.data();
-                        const transactionDate = new Date(data.date);
-                        const formattedTransDate = formatDate(transactionDate);
+                        const transactionDate = data.date;
 
                         // Check if transaction date falls within selected range
-                        if (formattedTransDate >= formatStart && formattedTransDate <= formatEnd) {
+                        if (transactionDate >= formatStart && transactionDate <= formatEnd) {
                             rangeGross += data.gross;
                             rangeTips += data.tips;
                             rangeNet += data.net;
