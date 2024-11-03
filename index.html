@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Club Tattoo Earnings Tracker</title>
     <style>
-        /* Base Styles */
         body {
             font-family: Arial, sans-serif;
             background-color: #1e1e2f;
@@ -19,12 +18,11 @@
             padding: 20px;
         }
 
-        h1, h2, h3 {
+        h1, h2 {
             color: #ffffff;
             margin-bottom: 1rem;
         }
 
-        /* Container Styles */
         .container, .main-content {
             width: 100%;
             max-width: 500px;
@@ -39,7 +37,6 @@
             text-align: center;
         }
 
-        /* Input and Button Styles */
         input[type="text"], input[type="email"], input[type="password"], input[type="date"] {
             width: 100%;
             padding: 12px;
@@ -69,8 +66,7 @@
             background: linear-gradient(45deg, #00d2ff, #3a7bd5);
         }
 
-        /* Summary and Log Boxes */
-        .summary-box, .transaction-log {
+        .summary-box, .transaction-log, .date-summary-container {
             background-color: #3a3a4f;
             padding: 15px;
             border-radius: 10px;
@@ -91,7 +87,7 @@
             flex: 1;
         }
 
-        .transaction-log h3 {
+        .transaction-log h3, .date-summary-container h3 {
             font-size: 1.2em;
             text-align: center;
             margin-bottom: 15px;
@@ -105,9 +101,19 @@
             font-size: 0.9em;
         }
 
-        /* Mobile Responsive */
+        .warning-text {
+            color: #ff5555;
+            font-size: 0.9em;
+            text-align: center;
+            margin-top: -10px;
+        }
+
+        .date-summary-container {
+            text-align: center;
+        }
+
         @media (max-width: 500px) {
-            h1, h2, h3 {
+            h1, h2 {
                 font-size: 1.5em;
             }
 
@@ -122,7 +128,6 @@
     </style>
 </head>
 <body>
-    <!-- Login Container -->
     <div class="container" id="login-container">
         <h1>Club Tattoo Earnings Tracker</h1>
         <input type="email" id="email" placeholder="Email"><br>
@@ -131,7 +136,6 @@
         <button onclick="logIn()">Log In</button>
     </div>
 
-    <!-- Main Content (Visible after login) -->
     <div class="main-content" id="main-content" style="display:none;">
         <h2>Welcome to your Earnings Tracker!</h2>
         <input type="text" id="totalTattooValue" placeholder="Total Tattoo Value ($)">
@@ -140,10 +144,14 @@
         <input type="text" id="cardTip" placeholder="Card Tip ($)">
         <input type="text" id="description" placeholder="Description (optional)">
         <button onclick="recordTransaction()">Record Transaction</button>
+        
         <button onclick="undoLastTransaction()">Undo Last Transaction</button>
         <button onclick="logOut()">Log Out</button>
+        
+        <div class="warning-text">
+            <button onclick="resetLog()" style="background: linear-gradient(45deg, #ff5555, #d52a2a);">Reset Log (All data will be deleted permanently)</button>
+        </div>
 
-        <!-- Daily and Grand Totals Summary Boxes -->
         <div class="summary-box">
             <div class="summary-item">
                 <strong>Daily Summary</strong><br>
@@ -158,44 +166,36 @@
             </div>
         </div>
 
-        <!-- Date Range Summary -->
-        <div class="container" id="date-range-summary">
+        <div class="date-summary-container">
             <h3>View Summary by Date Range</h3>
-            <input type="date" id="startDate" placeholder="Start Date">
-            <input type="date" id="endDate" placeholder="End Date">
+            <input type="date" id="startDate">
+            <input type="date" id="endDate">
             <button onclick="viewSummaryByDateRange()">View Summary</button>
-            <div id="dateRangeSummary">
+            <div class="summary-box">
                 Gross: $<span id="rangeGross">0.00</span>, Tips: $<span id="rangeTips">0.00</span>, Net: $<span id="rangeNet">0.00</span>
             </div>
         </div>
 
-        <!-- Transaction Log -->
         <div class="transaction-log">
             <h3>Transaction Log</h3>
             <div id="logDisplay">No transactions recorded.</div>
         </div>
-
-        <!-- Reset Log Button -->
-        <button onclick="resetLog()" style="background: linear-gradient(45deg, #ff4b2b, #ff416c); margin-top: 15px;">Reset Log</button>
     </div>
 
-    <!-- Firebase setup and JavaScript logic here -->
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
     <script>
-        // Firebase configuration
         const firebaseConfig = {
-            apiKey: "AIzaSyDwkAyX5RSMXDSe7PHSd7ZwI27Ed5uEhKo",
-            authDomain: "club-tattoo-earnings-tracker.firebaseapp.com",
-            projectId: "club-tattoo-earnings-tracker",
-            storageBucket: "club-tattoo-earnings-tracker.appspot.com",
-            messagingSenderId: "411443089106",
-            appId: "1:411443089106:web:93a23cea86e8d008d7a70b",
-            measurementId: "G-6W7SQXCWJC"
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID",
+            measurementId: "YOUR_MEASUREMENT_ID"
         };
 
-        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
@@ -224,7 +224,7 @@
             const email = document.getElementById("email").value;
             const password = document.getElementById("password").value;
             auth.createUserWithEmailAndPassword(email, password)
-                .then(() => {
+                .then((userCredential) => {
                     alert("Sign-up successful!");
                     showMainContent();
                 })
@@ -235,7 +235,7 @@
             const email = document.getElementById("email").value;
             const password = document.getElementById("password").value;
             auth.signInWithEmailAndPassword(email, password)
-                .then(() => {
+                .then((userCredential) => {
                     alert("Log-in successful!");
                     showMainContent();
                 })
@@ -268,7 +268,7 @@
                 tips,
                 net,
                 description,
-                date: new Date().toDateString(),
+                date: new Date().toISOString().split('T')[0],
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             }).then(() => {
                 updateSummaries();
@@ -278,7 +278,7 @@
         }
 
         function resetLog() {
-            if (confirm("Are you sure you want to reset the log?")) {
+            if (confirm("Are you sure you want to reset the log? This action cannot be undone.")) {
                 db.collection("earnings")
                     .where("userId", "==", auth.currentUser.uid)
                     .get()
@@ -313,7 +313,7 @@
                 .then((querySnapshot) => {
                     let dailyGross = 0, dailyTips = 0, dailyNet = 0;
                     let grandGross = 0, grandTips = 0, grandNet = 0;
-                    const today = new Date().toDateString();
+                    const today = new Date().toISOString().split('T')[0];
 
                     querySnapshot.forEach((doc) => {
                         const data = doc.data();
@@ -348,17 +348,17 @@
                             const data = doc.data();
                             return `<div class="transaction-item">${data.date}: $${data.gross.toFixed(2)} gross, $${data.tips.toFixed(2)} tips, $${data.net.toFixed(2)} net.<br>Description: ${data.description}</div>`;
                         }).join("");
-                })
-                .catch((error) => {
-                    console.error("Error displaying log:", error.message);
-                    alert("Error displaying log: " + error.message);
                 });
         }
 
         function viewSummaryByDateRange() {
-            const startDate = new Date(document.getElementById("startDate").value);
-            const endDate = new Date(document.getElementById("endDate").value);
-            endDate.setHours(23, 59, 59, 999);
+            const startDate = document.getElementById("startDate").value;
+            const endDate = document.getElementById("endDate").value;
+
+            if (!startDate || !endDate) {
+                alert("Please select both start and end dates.");
+                return;
+            }
 
             db.collection("earnings")
                 .where("userId", "==", auth.currentUser.uid)
@@ -368,9 +368,8 @@
 
                     querySnapshot.forEach((doc) => {
                         const data = doc.data();
-                        const recordDate = new Date(data.date);
-
-                        if (recordDate >= startDate && recordDate <= endDate) {
+                        const date = data.date;
+                        if (date >= startDate && date <= endDate) {
                             rangeGross += data.gross;
                             rangeTips += data.tips;
                             rangeNet += data.net;
@@ -380,10 +379,6 @@
                     document.getElementById("rangeGross").innerText = rangeGross.toFixed(2);
                     document.getElementById("rangeTips").innerText = rangeTips.toFixed(2);
                     document.getElementById("rangeNet").innerText = rangeNet.toFixed(2);
-                })
-                .catch((error) => {
-                    console.error("Error fetching summary:", error.message);
-                    alert("Error fetching summary: " + error.message);
                 });
         }
     </script>
