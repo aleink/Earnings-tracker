@@ -40,7 +40,7 @@
         }
 
         /* Input and Button Styles */
-        input[type="text"], input[type="email"], input[type="password"] {
+        input[type="text"], input[type="email"], input[type="password"], input[type="date"] {
             width: 100%;
             padding: 12px;
             margin: 8px 0;
@@ -97,6 +97,16 @@
 
         .summary-item {
             text-align: center;
+            flex: 1;
+        }
+
+        .date-range-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .date-range-container input[type="date"] {
             flex: 1;
         }
 
@@ -184,6 +194,21 @@
             </div>
         </div>
 
+        <!-- Date Range Summary -->
+        <div class="summary-box">
+            <div class="summary-item">
+                <strong>Date Range Summary</strong>
+                <div class="date-range-container">
+                    <input type="date" id="startDate">
+                    <input type="date" id="endDate">
+                </div>
+                <button onclick="calculateDateRangeSummary()">Calculate Range</button>
+                <div id="dateRangeSummary">
+                    Select dates to see summary
+                </div>
+            </div>
+        </div>
+
         <!-- Transaction Log -->
         <div class="transaction-log">
             <h3>Transaction Log</h3>
@@ -215,11 +240,13 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
+        // Store all transactions locally
+        let allTransactions = [];
+
         function showMainContent() {
             document.getElementById("login-container").style.display = "none";
             document.getElementById("main-content").style.display = "block";
-            updateSummaries();
-            displayLog();
+            fetchAllTransactions();
         }
 
         function showLogin() {
@@ -227,11 +254,57 @@
             document.getElementById("main-content").style.display = "none";
         }
 
+        // Fetch all transactions and store them locally
+        function fetchAllTransactions() {
+            db.collection("earnings")
+                .where("userId", "==", auth.currentUser.uid)
+                .get()
+                .then((querySnapshot) => {
+                    allTransactions = querySnapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }));
+                    updateSummaries();
+                    displayLog();
+                })
+                .catch((error) => console.error("Error fetching transactions:", error));
+        }
+
+        function calculateDateRangeSummary() {
+            const startDate = new Date(document.getElementById("startDate").value);
+            const endDate = new Date(document.getElementById("endDate").value);
+            endDate.setHours(23, 59, 59, 999); // Include the entire end date
+
+            if (!startDate || !endDate) {
+                alert("Please select both start and end dates");
+                return;
+            }
+
+            const filteredTransactions = allTransactions.filter(transaction => {
+                const transactionDate = new Date(transaction.date);
+                return transactionDate >= startDate && transactionDate <= endDate;
+            });
+
+            const summary = filteredTransactions.reduce((acc, transaction) => {
+                acc.gross += transaction.gross || 0;
+                acc.tips += transaction.tips || 0;
+                acc.net += transaction.net || 0;
+                return acc;
+            }, { gross: 0, tips: 0, net: 0 });
+
+            document.getElementById("dateRangeSummary").innerHTML = `
+                Gross: $${summary.gross.toFixed(2)}<br>
+                Tips: $${summary.tips.toFixed(2)}<br>
+                Net: $${summary.net.toFixed(2)}
+            `;
+        }
+
         auth.onAuthStateChanged((user) => {
             if (user) {
                 showMainContent();
             } else {
                 showLogin();
+                allTransactions = []; // Clear stored transactions on logout
             }
         });
 
@@ -274,7 +347,7 @@
             const tips = cashTip + cardTip;
             const net = (totalTattooValue * percentageEarned) + tips;
 
-            db.collection("earnings").add({
+            const newTransaction = {
                 userId: auth.currentUser.uid,
                 gross,
                 tips,
@@ -282,99 +355,88 @@
                 description,
                 date: new Date().toDateString(),
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            }).then(() => {
-                updateSummaries();
-                displayLog();
-            }).catch((error) => console.error("Error recording transaction:", error.message));
+            };
+
+            db.collection("earnings").add(newTransaction)
+                .then((docRef) => {
+                    newTransaction.id = docRef.id;
+                    allTransactions.push(newTransaction);
+                    updateSummaries();
+                    displayLog();
+                })
+                .catch((error) => console.error("Error recording transaction:", error.message));
         }
 
         function resetLog() {
             if (confirm("Are you sure you want to reset the log?")) {
-                db.collection("earnings")
-                    .where("userId", "==", auth.currentUser.uid)
-                    .get()
-                    .then((querySnapshot) => {
-                        querySnapshot.forEach((doc) => doc.ref.delete());
+                const deletePromises = allTransactions.map(transaction => 
+                    db.collection("earnings").doc(transaction.id).delete()
+                );
+
+                Promise.all(deletePromises)
+                    .then(() => {
+                        allTransactions = [];
                         updateSummaries();
                         displayLog();
-                    });
+                        document.getElementById("dateRangeSummary").innerHTML = "Select dates to see summary";
+                    })
+                    .catch((error) => console.error("Error resetting log:", error));
             }
         }
 
         function undoLastTransaction() {
-            db.collection("earnings")
-                .where("userId", "==", auth.currentUser.uid)
-                .get()
-                .then((querySnapshot) => {
-                    const transactions = querySnapshot.docs.map(doc => ({
-                        id: doc.id,
-                        ...doc.data()
-                    }));
+            if (allTransactions.length === 0) {
+                console.log("No transactions found to undo.");
+                return;
+            }
 
-                    if (transactions.length === 0) {
-                        console.log("No transactions found to undo.");
-                        return;
-                    }
+            const latestTransaction = allTransactions.reduce((latest, current) => {
+                return new Date(current.timestamp?.toDate()) > new Date(latest.timestamp?.toDate()) ? current : latest;
+            });
 
-                    // Find the transaction with the latest timestamp manually
-                    const latestTransaction = transactions.reduce((latest, current) => {
-                        return new Date(current.timestamp?.toDate()) > new Date(latest.timestamp?.toDate()) ? current : latest;
-                    });
-
-                    db.collection("earnings").doc(latestTransaction.id).delete()
-                        .then(() => {
-                            updateSummaries();
-                            displayLog();
-                        })
-                        .catch((error) => console.error("Error deleting last transaction:", error));
+            db.collection("earnings").doc(latestTransaction.id).delete()
+                .then(() => {
+                    allTransactions = allTransactions.filter(t => t.id !== latestTransaction.id);
+                    updateSummaries();
+                    displayLog();
                 })
-                .catch((error) => console.error("Error retrieving transactions:", error));
+                .catch((error) => console.error("Error deleting last transaction:", error));
         }
 
         function updateSummaries() {
-            db.collection("earnings")
-                .where("userId", "==", auth.currentUser.uid)
-                .get()
-                .then((querySnapshot) => {
-                    let dailyGross = 0, dailyTips = 0, dailyNet = 0;
-                    let grandGross = 0, grandTips = 0, grandNet = 0;
-                    const today = new Date().toDateString();
+            let dailyGross = 0, dailyTips = 0, dailyNet = 0;
+            let grandGross = 0, grandTips = 0, grandNet = 0;
+            const today = new Date().toDateString();
 
-                    querySnapshot.forEach((doc) => {
-                        const data = doc.data();
-                        grandGross += data.gross;
-                        grandTips += data.tips;
-                        grandNet += data.net;
-                        if (data.date === today) {
-                            dailyGross += data.gross;
-                            dailyTips += data.tips;
-                            dailyNet += data.net;
-                        }
-                    });
+            allTransactions.forEach((transaction) => {
+                grandGross += transaction.gross;
+                grandTips += transaction.tips;
+                grandNet += transaction.net;
+                if (transaction.date === today) {
+                    dailyGross += transaction.gross;
+                    dailyTips += transaction.tips;
+                    dailyNet += transaction.net;
+                }
+            });
 
-                    document.getElementById("dailyGross").innerText = dailyGross.toFixed(2);
-                    document.getElementById("dailyTips").innerText = dailyTips.toFixed(2);
-                    document.getElementById("dailyNet").innerText = dailyNet.toFixed(2);
-                    document.getElementById("grandGross").innerText = grandGross.toFixed(2);
-                    document.getElementById("grandTips").innerText = grandTips.toFixed(2);
-                    document.getElementById("grandNet").innerText = grandNet.toFixed(2);
-                });
+            document.getElementById("dailyGross").innerText = dailyGross.toFixed(2);
+            document.getElementById("dailyTips").innerText = dailyTips.toFixed(2);
+            document.getElementById("dailyNet").innerText = dailyNet.toFixed(2);
+            document.getElementById("grandGross").innerText = grandGross.toFixed(2);
+            document.getElementById("grandTips").innerText = grandTips.toFixed(2);
+            document.getElementById("grandNet").innerText = grandNet.toFixed(2);
         }
 
         function displayLog() {
-            db.collection("earnings")
-                .where("userId", "==", auth.currentUser.uid)
-                .get()
-                .then((querySnapshot) => {
-                    const logDisplay = document.getElementById("logDisplay");
-                    logDisplay.innerHTML = querySnapshot.empty
-                        ? "No transactions recorded."
-                        : querySnapshot.docs.map(doc => {
-                            const data = doc.data();
-                            return `<div class="transaction-item">${data.date}: $${data.gross.toFixed(2)} gross, $${data.tips.toFixed(2)} tips, $${data.net.toFixed(2)} net.<br>Description: ${data.description}</div>`;
-                        }).join("");
-                })
-                .catch((error) => console.error("Error displaying log:", error.message));
+            const logDisplay = document.getElementById("logDisplay");
+            logDisplay.innerHTML = allTransactions.length === 0
+                ? "No transactions recorded."
+                : allTransactions
+                    .sort((a, b) => new Date(b.timestamp?.toDate()) - new Date(a.timestamp?.toDate()))
+                    .map(transaction => {
+                        return `<div class="transaction-item">${transaction.date}: $${transaction.gross.toFixed(2)} gross, $${transaction.tips.toFixed(2)} tips, $${transaction.net.toFixed(2)} net.<br>Description: ${transaction.description}</div>`;
+                    })
+                    .join("");
         }
     </script>
 </body>
