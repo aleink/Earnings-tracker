@@ -19,7 +19,7 @@
             padding: 20px;
         }
 
-        h1, h2, h3, label {
+        h1, h2, label {
             color: #ffffff;
             margin-bottom: 1rem;
         }
@@ -236,6 +236,7 @@
                 Gross: $<span id="grandGross">0.00</span>, Tips: $<span id="grandTips">0.00</span>, Net: $<span id="grandNet">0.00</span>
             </div>
         </div>
+
         <!-- Date Range Section -->
         <div class="date-range-container">
             <h3>Date Range Summary</h3>
@@ -360,13 +361,6 @@
                 date: formattedDate,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             }).then(() => {
-                // Clear input fields after successful recording
-                document.getElementById("totalTattooValue").value = "";
-                document.getElementById("percentageEarned").value = "";
-                document.getElementById("cashTip").value = "";
-                document.getElementById("cardTip").value = "";
-                document.getElementById("description").value = "";
-                
                 updateSummaries();
                 displayLog();
             }).catch((error) => console.error("Error recording transaction:", error.message));
@@ -381,7 +375,6 @@
                         querySnapshot.forEach((doc) => doc.ref.delete());
                         updateSummaries();
                         displayLog();
-                        document.getElementById("dateRangeSummary").style.display = "none";
                     });
             }
         }
@@ -389,17 +382,28 @@
         function undoLastTransaction() {
             db.collection("earnings")
                 .where("userId", "==", auth.currentUser.uid)
-                .orderBy("timestamp", "desc")
-                .limit(1)
                 .get()
                 .then((querySnapshot) => {
-                    if (!querySnapshot.empty) {
-                        querySnapshot.docs[0].ref.delete()
-                            .then(() => {
-                                updateSummaries();
-                                displayLog();
-                            });
+                    const transactions = querySnapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }));
+
+                    if (transactions.length === 0) {
+                        console.log("No transactions found to undo.");
+                        return;
                     }
+
+                    const latestTransaction = transactions.reduce((latest, current) => {
+                        return new Date(current.timestamp?.toDate()) > new Date(latest.timestamp?.toDate()) ? current : latest;
+                    });
+
+                    db.collection("earnings").doc(latestTransaction.id).delete()
+                        .then(() => {
+                            updateSummaries();
+                            displayLog();
+                        })
+                        .catch((error) => console.error("Error deleting last transaction:", error));
                 })
                 .catch((error) => console.error("Error retrieving transactions:", error));
         }
@@ -437,7 +441,6 @@
         function displayLog() {
             db.collection("earnings")
                 .where("userId", "==", auth.currentUser.uid)
-                .orderBy("timestamp", "desc")  // Order by timestamp in descending order
                 .get()
                 .then((querySnapshot) => {
                     const logDisplay = document.getElementById("logDisplay");
@@ -454,7 +457,6 @@
         function exportCSV() {
             db.collection("earnings")
                 .where("userId", "==", auth.currentUser.uid)
-                .orderBy("timestamp", "desc")
                 .get()
                 .then((querySnapshot) => {
                     let csvContent = "Date,Gross,Tips,Net,Description\n";
@@ -511,7 +513,6 @@
                     document.getElementById("rangeGross").innerText = rangeGross.toFixed(2);
                     document.getElementById("rangeTips").innerText = rangeTips.toFixed(2);
                     document.getElementById("rangeNet").innerText = rangeNet.toFixed(2);
-                    summaryDiv.style.display = "block";
                 })
                 .catch((error) => console.error("Error calculating date range summary:", error));
         }
