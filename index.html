@@ -291,9 +291,9 @@
         function formatDate(date) {
             // Subtract one day to adjust for timezone offset
             const d = new Date(date);
-            d.setDate(d.getDate() - 1);
+            d.setDate(d.getDate() - 0);
             
-            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const month = String(d.getMonth() + 0).padStart(2, '0');
             const day = String(d.getDate()).padStart(2, '0');
             const year = d.getFullYear();
             return `${month}/${day}/${year}`;
