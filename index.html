@@ -40,7 +40,7 @@
         }
 
         /* Input and Button Styles */
-        input[type="text"], input[type="email"], input[type="password"], input[type="date"] {
+        input[type="text"], input[type="email"], input[type="password"] {
             width: 100%;
             padding: 12px;
             margin: 8px 0;
@@ -184,20 +184,6 @@
             </div>
         </div>
 
-        <!-- Date Range Summary -->
-        <div class="container">
-            <h3>View Summary by Date Range</h3>
-            <input type="date" id="startDate" placeholder="Start Date">
-            <input type="date" id="endDate" placeholder="End Date">
-            <button onclick="viewSummaryByDateRange()">View Summary</button>
-            <div class="summary-box">
-                <div class="summary-item">
-                    <strong>Date Range Summary</strong><br>
-                    Gross: $<span id="rangeGross">0.00</span>, Tips: $<span id="rangeTips">0.00</span>, Net: $<span id="rangeNet">0.00</span>
-                </div>
-            </div>
-        </div>
-
         <!-- Transaction Log -->
         <div class="transaction-log">
             <h3>Transaction Log</h3>
@@ -330,6 +316,7 @@
                         return;
                     }
 
+                    // Find the transaction with the latest timestamp manually
                     const latestTransaction = transactions.reduce((latest, current) => {
                         return new Date(current.timestamp?.toDate()) > new Date(latest.timestamp?.toDate()) ? current : latest;
                     });
@@ -372,32 +359,6 @@
                     document.getElementById("grandTips").innerText = grandTips.toFixed(2);
                     document.getElementById("grandNet").innerText = grandNet.toFixed(2);
                 });
-        }
-
-        function viewSummaryByDateRange() {
-            const startDate = new Date(document.getElementById("startDate").value);
-            const endDate = new Date(document.getElementById("endDate").value);
-            let rangeGross = 0, rangeTips = 0, rangeNet = 0;
-
-            db.collection("earnings")
-                .where("userId", "==", auth.currentUser.uid)
-                .get()
-                .then((querySnapshot) => {
-                    querySnapshot.forEach((doc) => {
-                        const data = doc.data();
-                        const transactionDate = new Date(data.date);
-                        if (transactionDate >= startDate && transactionDate <= endDate) {
-                            rangeGross += data.gross;
-                            rangeTips += data.tips;
-                            rangeNet += data.net;
-                        }
-                    });
-
-                    document.getElementById("rangeGross").innerText = rangeGross.toFixed(2);
-                    document.getElementById("rangeTips").innerText = rangeTips.toFixed(2);
-                    document.getElementById("rangeNet").innerText = rangeNet.toFixed(2);
-                })
-                .catch((error) => console.error("Error retrieving transactions:", error.message));
         }
 
         function displayLog() {
