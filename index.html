@@ -243,6 +243,15 @@
         // Store all transactions locally
         let allTransactions = [];
 
+        // Helper function to format dates consistently
+        function formatDate(date) {
+            const d = new Date(date);
+            const month = (d.getMonth() + 1).toString().padStart(2, '0');
+            const day = d.getDate().toString().padStart(2, '0');
+            const year = d.getFullYear();
+            return `${month}/${day}/${year}`;
+        }
+
         function showMainContent() {
             document.getElementById("login-container").style.display = "none";
             document.getElementById("main-content").style.display = "block";
@@ -254,7 +263,6 @@
             document.getElementById("main-content").style.display = "none";
         }
 
-        // Fetch all transactions and store them locally
         function fetchAllTransactions() {
             db.collection("earnings")
                 .where("userId", "==", auth.currentUser.uid)
@@ -271,21 +279,19 @@
         }
 
         function calculateDateRangeSummary() {
-            const startDate = new Date(document.getElementById("startDate").value);
-            const endDate = new Date(document.getElementById("endDate").value);
-            endDate.setHours(23, 59, 59, 999); // Include the entire end date
+            const startDate = document.getElementById("startDate").value;
+            const endDate = document.getElementById("endDate").value;
 
             if (!startDate || !endDate) {
                 alert("Please select both start and end dates");
                 return;
             }
 
-            // Convert start and end dates to the same format as transaction dates
-            const startDateString = startDate.toDateString();
-            const endDateString = endDate.toDateString();
+            const startDateFormatted = formatDate(startDate);
+            const endDateFormatted = formatDate(endDate);
 
             const filteredTransactions = allTransactions.filter(transaction => {
-                return transaction.date >= startDateString && transaction.date <= endDateString;
+                return transaction.date >= startDateFormatted && transaction.date <= endDateFormatted;
             });
 
             const summary = filteredTransactions.reduce((acc, transaction) => {
@@ -301,9 +307,8 @@
                 Net: $${summary.net.toFixed(2)}
             `;
 
-            // For debugging
-            console.log('Start Date:', startDateString);
-            console.log('End Date:', endDateString);
+            console.log('Start Date:', startDateFormatted);
+            console.log('End Date:', endDateFormatted);
             console.log('Filtered Transactions:', filteredTransactions);
             console.log('Summary:', summary);
         }
@@ -362,7 +367,7 @@
                 tips,
                 net,
                 description,
-                date: new Date().toDateString(),
+                date: formatDate(new Date()),
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             };
 
@@ -421,7 +426,7 @@
         function updateSummaries() {
             let dailyGross = 0, dailyTips = 0, dailyNet = 0;
             let grandGross = 0, grandTips = 0, grandNet = 0;
-            const today = new Date().toDateString();
+            const today = formatDate(new Date());
 
             allTransactions.forEach((transaction) => {
                 grandGross += Number(transaction.gross) || 0;
